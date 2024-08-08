@@ -122,11 +122,19 @@ function createServerControls(serverName) {
     controlsContainer.appendChild(button);
   });
 
+
+
   const logButton = document.createElement('button');
   logButton.textContent = 'View Log';
   logButton.className = 'log-btn';
   logButton.onclick = () => viewServerLog(serverName);
   controlsContainer.appendChild(logButton);
+
+  const joinButton = document.createElement('button');
+  joinButton.textContent = 'Join';
+  joinButton.className = 'join-btn';
+  joinButton.onclick = () => joinServer(serverName);
+  controlsContainer.appendChild(joinButton);
 
   container.appendChild(controlsContainer);
 
@@ -276,6 +284,24 @@ async function importSSHKey() {
   } catch (error) {
     console.error('Error importing SSH key:', error);
     alert('Failed to import SSH key.');
+  }
+}
+
+async function joinServer(serverName) {
+  try {
+    const result = await ipcRenderer.invoke('join-server', serverName);
+    if (result.success) {
+      console.log(`Joined server ${serverName}`);
+      // You might want to handle this differently since joining a server
+      // typically means taking over the terminal
+      alert(`Joined server ${serverName}. Check your terminal.`);
+    } else {
+      console.error(`Failed to join server ${serverName}:`, result.error);
+      alert(`Failed to join server ${serverName}: ${result.error}`);
+    }
+  } catch (error) {
+    console.error(`Error joining server ${serverName}:`, error);
+    alert(`Error joining server ${serverName}: ${error.message}`);
   }
 }
 

@@ -212,6 +212,9 @@
         .import-btn:hover {
             background-color: #2980b9;
         }
+
+
+ 	 .join-btn { background-color: #8e44ad; color: white; }
     </style>
 </head>
 <body>
@@ -224,6 +227,12 @@
             </div>
             <div id="inactive-servers-content"></div>
         </div>
+            <div class="import-buttons">
+        <button id="import-config-btn" class="import-btn">Import Config</button>
+        <button id="import-ssh-key-btn" class="import-btn">Import SSH Key</button>
+    </div>
+<button id="add-server-btn" class="add-server-btn">Add New Server</button>
+    
     </div>
     <div id="server-modal" class="modal">
         <div class="modal-content">
@@ -248,12 +257,7 @@
                 </div>
                 <button type="submit" class="form-submit">Save Server</button>
             </form>
-    <div class="import-buttons">
-        <button id="import-config-btn" class="import-btn">Import Config</button>
-        <button id="import-ssh-key-btn" class="import-btn">Import SSH Key</button>
-    </div>
-<button id="add-server-btn" class="add-server-btn">Add New Server</button>
-    
+
         </div>
     </div>
     <script src="renderer.js"></script>

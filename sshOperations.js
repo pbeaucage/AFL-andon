@@ -1,29 +1,34 @@
-// sshOperations.js
 const { Client } = require('ssh2');
-const fs = require('fs-extra');
+const fs = require('fs').promises;
 const path = require('path');
 
 class SSHOperations {
-  constructor(configPath) {
+  constructor(configPath, sshKeyPath) {
     this.config = {};
+    this.sshKeyPath = sshKeyPath;
     this.loadConfig(configPath);
   }
 
   loadConfig(configPath) {
     try {
-      this.config = fs.readJsonSync(configPath);
-      // Set default HTTP port if not specified
+      this.config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      // Set default values if not specified
       Object.keys(this.config).forEach(serverName => {
-        if (!this.config[serverName].httpPort) {
-          this.config[serverName].httpPort = 5000;
-        }
+        const server = this.config[serverName];
+        if (!server.httpPort) server.httpPort = 5000;
+        if (!server.shell) server.shell = 'bash';
+        if (!server.active) server.active = true;
       });
     } catch (error) {
       console.error('Error loading config:', error);
     }
   }
 
-  executeCommand(serverName, command) {
+  loadSSHKey(sshKeyPath) {
+    this.sshKeyPath = sshKeyPath;
+  }
+
+  async executeCommand(serverName, command) {
     return new Promise((resolve, reject) => {
       const serverConfig = this.config[serverName];
       if (!serverConfig) {
@@ -52,24 +57,37 @@ class SSHOperations {
         });
       }).connect({
         host: serverConfig.host,
-        port: 22, // Always use the default SSH port
+        port: 22,
         username: process.env.SSH_USERNAME,
-        privateKey: fs.readFileSync(process.env.SSH_PRIVATE_KEY_PATH)
+        privateKey: fs.readFileSync(this.sshKeyPath)
       });
     });
   }
 
-
   async startServer(serverName) {
     const serverConfig = this.config[serverName];
-    const command = `screen -d -m -L -Logfile ${path.join(process.env.HOME, '.afl', `${serverConfig.screen_name}.screenlog`)} -S ${serverConfig.screen_name} ${serverConfig.server_script}`;
-    return this.executeCommand(serverName, command);
+    const screenLogPath = path.join('.afl', `${serverConfig.screen_name}.screenlog`);
+    let startCommand;
+
+    if (serverConfig.server_module) {
+      let command = `python -m ${serverConfig.server_module}`;
+      if (serverConfig.conda_env) {
+        command = `conda activate ${serverConfig.conda_env};${command}`;
+      }
+      startCommand = `screen -d -m -L -Logfile $\{HOME}/${screenLogPath} -S ${serverConfig.screen_name} ${serverConfig.shell} -ci "${command}"`;
+    } else if (serverConfig.server_script) {
+      startCommand = `screen -d -m -L -Logfile $\{HOME}/${screenLogPath} -S ${serverConfig.screen_name} ${serverConfig.server_script}`;
+    } else {
+      throw new Error('Neither server_module nor server_script specified in config');
+    }
+
+    return this.executeCommand(serverName, startCommand);
   }
 
   async stopServer(serverName) {
     const serverConfig = this.config[serverName];
-    const command = `screen -X -S ${serverConfig.screen_name} quit`;
-    return this.executeCommand(serverName, command);
+    const stopCommand = `screen -X -S ${serverConfig.screen_name} quit`;
+    return this.executeCommand(serverName, stopCommand);
   }
 
   async restartServer(serverName) {
@@ -78,17 +96,23 @@ class SSHOperations {
   }
 
   async getServerStatus(serverName) {
-    const command = 'screen -ls';
-    const { output } = await this.executeCommand(serverName, command);
     const serverConfig = this.config[serverName];
+    const statusCommand = 'screen -ls';
+    const { output } = await this.executeCommand(serverName, statusCommand);
     return output.includes(serverConfig.screen_name);
   }
 
   async getServerLog(serverName, lines = 100) {
     const serverConfig = this.config[serverName];
-    const logPath = path.join(process.env.HOME, '.afl', `${serverConfig.screen_name}.screenlog`);
-    const command = `tail -n ${lines} ${logPath}`;
-    return this.executeCommand(serverName, command);
+    const logPath = path.join('.afl', `${serverConfig.screen_name}.screenlog`);
+    const logCommand = `tail -n ${lines} $\{HOME}/${logPath}`;
+    return this.executeCommand(serverName, logCommand);
+  }
+
+  async joinServer(serverName) {
+    const serverConfig = this.config[serverName];
+    const joinCommand = `screen -x ${serverConfig.screen_name}`;
+    return this.executeCommand(serverName, joinCommand);
   }
 }
 

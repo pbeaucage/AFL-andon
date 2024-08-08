@@ -141,3 +141,13 @@ ipcMain.handle('save-config', async (event, newConfig) => {
     return { success: false, error: error.message };
   }
 });
+
+ipcMain.handle('join-server', async (event, serverName) => {
+  try {
+    const result = await sshOps.joinServer(serverName);
+    return { success: true, output: result.output };
+  } catch (error) {
+    console.error(`Error joining server ${serverName}:`, error);
+    return { success: false, error: error.message };
+  }
+});
