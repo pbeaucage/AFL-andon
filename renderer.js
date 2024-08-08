@@ -357,7 +357,6 @@ async function joinServer(serverName) {
     alert(`Error joining server ${serverName}: ${error.message}`);
   }
 }
-
 // Wait for the DOM to be fully loaded before creating UI elements
 document.addEventListener('DOMContentLoaded', async () => {
   await loadConfig();
@@ -370,6 +369,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('inactive-servers-header').addEventListener('click', toggleInactiveServers);
   document.getElementById('import-config-btn').addEventListener('click', importConfig);
   document.getElementById('import-ssh-key-btn').addEventListener('click', importSSHKey);
+  document.querySelector('.close-log').addEventListener('click', closeLogModal);
+
+  // Close log modal when clicking outside of it
+  window.onclick = function(event) {
+    const logModal = document.getElementById('log-modal');
+    if (event.target == logModal) {
+      logModal.style.display = 'none';
+    }
+  }
+
 
   // Update statuses every 5 seconds
   setInterval(() => {
