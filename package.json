@@ -1,0 +1,52 @@
+{
+  "name": "AFL-andon",
+  "version": "1.0.0",
+  "description": "AFL server command app / Andon board",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --debug",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pbeaucage/AFL-andon.git"
+  },
+  "author": "Peter Beaucage",
+  "license": "NIST-PD-fallback",
+  "bugs": {
+    "url": "https://github.com/pbeaucage/AFL-andon/issues"
+  },
+  "homepage": "https://github.com/pbeaucage/AFL-andon#readme",
+  "dependencies": {
+    "fs-extra": "^11.1.1",
+    "node-fetch": "^2.7.0",
+    "ssh2": "^1.11.0"
+  },
+  "devDependencies": {
+    "electron": "^24.3.0",
+    "electron-builder": "^23.6.0"
+  },
+  "build": {
+    "appId": "gov.nist.AFL-andon",
+    "productName": "AFL Andon",
+    "mac": {
+      "category": "public.app-category.utilities"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility"
+    }
+  }
+}

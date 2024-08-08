@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Control Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        .server-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+        .server-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        .server-info {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+        }
+        .status-indicators {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        .status-indicator {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            margin-right: 10px;
+        }
+        .status-up {
+            background-color: #2ecc71;
+            color: white;
+        }
+        .status-down {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            opacity: 0.8;
+        }
+        .start-btn { background-color: #27ae60; color: white; }
+        .stop-btn { background-color: #c0392b; color: white; }
+        .restart-btn { background-color: #f39c12; color: white; }
+        .log-btn { background-color: #3498db; color: white; }
+         .add-server-btn {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .server-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .server-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .edit-btn, .toggle-active-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .edit-btn {
+            background-color: #f39c12;
+            color: white;
+        }
+        .toggle-active-btn {
+            background-color: #95a5a6;
+            color: white;
+        }
+        .inactive {
+            opacity: 0.5;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-submit {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #active-servers, #inactive-servers {
+            margin-top: 20px;
+        }
+
+        #inactive-servers-header {
+            background-color: #ecf0f1;
+            padding: 10px;
+            margin-top: 20px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        #inactive-servers-header:hover {
+            background-color: #d5dbdb;
+        }
+
+        #inactive-servers-content {
+            display: none;
+        }
+
+        .arrow {
+            display: inline-block;
+            margin-right: 5px;
+            transition: transform 0.3s;
+        }
+
+        .arrow.down {
+            transform: rotate(90deg);
+        }
+    </style>
+</head>
+<body>
+    <h1>Server Control Panel</h1>
+    <button id="add-server-btn" class="add-server-btn">Add New Server</button>
+    <div id="app">
+        <div id="active-servers"></div>
+        <div id="inactive-servers">
+            <div id="inactive-servers-header">
+                <span class="arrow">▶</span> Inactive Servers
+            </div>
+            <div id="inactive-servers-content"></div>
+        </div>
+    </div>
+    <div id="server-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modal-title">Add New Server</h2>
+            <form id="server-form">
+                <div class="form-group">
+                    <label for="server-name">Server Name:</label>
+                    <input type="text" id="server-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="server-host">Host:</label>
+                    <input type="text" id="server-host" required>
+                </div>
+                <div class="form-group">
+                    <label for="server-port">HTTP Port:</label>
+                    <input type="number" id="server-port" required>
+                </div>
+                <div class="form-group">
+                    <label for="server-script">Server Script:</label>
+                    <input type="text" id="server-script" required>
+                </div>
+                <button type="submit" class="form-submit">Save Server</button>
+            </form>
+        </div>
+    </div>
+    <script src="renderer.js"></script>
+</body>
+</html>
