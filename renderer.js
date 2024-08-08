@@ -93,8 +93,9 @@ function createServerControls(serverName) {
 
   const infoElement = document.createElement('div');
   infoElement.className = 'server-info';
-  infoElement.textContent = `SSH: ${serverConfig.host}, HTTP: ${serverConfig.host}:${serverConfig.httpPort}`;
+  infoElement.textContent = `SSH: ${serverConfig.username}@${serverConfig.host}, HTTP: ${serverConfig.host}:${serverConfig.httpPort}`;
   container.appendChild(infoElement);
+
 
   const statusContainer = document.createElement('div');
   statusContainer.className = 'status-indicators';
@@ -154,7 +155,6 @@ async function viewServerLog(serverName) {
     console.error(`Error getting log for ${serverName}:`, error);
   }
 }
-
 function openServerModal(serverName = null) {
   const modal = document.getElementById('server-modal');
   const modalTitle = document.getElementById('modal-title');
@@ -167,8 +167,9 @@ function openServerModal(serverName = null) {
     const server = config[serverName];
     form.elements['server-name'].value = serverName;
     form.elements['server-host'].value = server.host;
+    form.elements['server-username'].value = server.username;
     form.elements['server-port'].value = server.httpPort;
-    form.elements['server-script'].value = server.server_script;
+    form.elements['server-script'].value = server.server_script || server.server_module || '';
     form.elements['server-name'].disabled = true;
   } else {
     modalTitle.textContent = 'Add New Server';
@@ -177,6 +178,29 @@ function openServerModal(serverName = null) {
   }
 
   modal.style.display = 'block';
+}
+
+async function handleServerFormSubmit(event) {
+  event.preventDefault();
+  const form = event.target;
+  const serverName = form.elements['server-name'].value;
+  const serverConfig = {
+    host: form.elements['server-host'].value,
+    username: form.elements['server-username'].value,
+    httpPort: parseInt(form.elements['server-port'].value, 10),
+    server_script: form.elements['server-script'].value,
+    active: true
+  };
+
+  if (editingServer) {
+    config[editingServer] = { ...config[editingServer], ...serverConfig };
+  } else {
+    config[serverName] = serverConfig;
+  }
+
+  await saveConfig();
+  closeServerModal();
+  renderServers();
 }
 
 function closeServerModal() {

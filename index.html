@@ -234,7 +234,7 @@
 <button id="add-server-btn" class="add-server-btn">Add New Server</button>
     
     </div>
-    <div id="server-modal" class="modal">
+  <div id="server-modal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
             <h2 id="modal-title">Add New Server</h2>
@@ -248,6 +248,10 @@
                     <input type="text" id="server-host" required>
                 </div>
                 <div class="form-group">
+                    <label for="server-username">Username:</label>
+                    <input type="text" id="server-username" required>
+                </div>
+                <div class="form-group">
                     <label for="server-port">HTTP Port:</label>
                     <input type="number" id="server-port" required>
                 </div>
@@ -257,7 +261,6 @@
                 </div>
                 <button type="submit" class="form-submit">Save Server</button>
             </form>
-
         </div>
     </div>
     <script src="renderer.js"></script>

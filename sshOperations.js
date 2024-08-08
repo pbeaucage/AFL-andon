@@ -24,6 +24,10 @@ class SSHOperations {
         if (!server.httpPort) server.httpPort = 5000;
         if (!server.shell) server.shell = 'bash';
         if (!server.active) server.active = true;
+        if (!server.username) {
+          console.warn(`Username not specified for server ${serverName}. Using current user.`);
+          server.username = require('os').userInfo().username;
+        }
       });
     } catch (error) {
       console.error('Error loading config:', error);
@@ -68,7 +72,7 @@ class SSHOperations {
       }).connect({
         host: serverConfig.host,
         port: 22,
-        username: process.env.SSH_USERNAME,
+        username: serverConfig.username,
         privateKey: this.sshKey
       });
     });
