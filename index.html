@@ -18,28 +18,62 @@
             text-align: center;
             color: #2c3e50;
         }
+        #app {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        @media (min-width: 768px) {
+            #app {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
         .server-container {
             background-color: #fff;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
             padding: 20px;
+            display: flex;
+            flex-direction: column;
         }
+
+        .server-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
         .server-name {
             font-size: 1.2em;
             font-weight: bold;
-            margin-bottom: 10px;
-            color: #2c3e50;
         }
+
+        .server-actions {
+            display: flex;
+            gap: 10px;
+        }
+
         .server-info {
-            font-size: 0.9em;
-            color: #7f8c8d;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
+
         .status-indicators {
             display: flex;
-            margin-bottom: 15px;
+            gap: 10px;
+            margin-bottom: 10px;
         }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
         .status-indicator {
             padding: 5px 10px;
             border-radius: 15px;
@@ -54,11 +88,7 @@
             background-color: #e74c3c;
             color: white;
         }
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
+
         button {
             padding: 8px 15px;
             border: none;
@@ -83,15 +113,7 @@
             border-radius: 4px;
             cursor: pointer;
         }
-        .server-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .server-actions {
-            display: flex;
-            gap: 10px;
-        }
+
         .edit-btn, .toggle-active-btn {
             padding: 5px 10px;
             border: none;

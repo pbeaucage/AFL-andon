@@ -264,12 +264,14 @@ function toggleServerActive(serverName) {
 }
 
 function renderServers() {
-  const activeServersContainer = document.getElementById('active-servers');
+  const appContainer = document.getElementById('app');
   const inactiveServersContainer = document.getElementById('inactive-servers-content');
   
   // Clear existing content
-  activeServersContainer.innerHTML = '';
-  inactiveServersContainer.innerHTML = '';
+  appContainer.innerHTML = '';
+  if (inactiveServersContainer) {
+    inactiveServersContainer.innerHTML = '';
+  }
 
   // Sort servers: active first, then alphabetically
   const sortedServers = Object.keys(config).sort((a, b) => {
@@ -279,20 +281,39 @@ function renderServers() {
     return config[b].active - config[a].active;
   });
 
+  // Render active servers
   sortedServers.forEach(serverName => {
-    const serverControls = createServerControls(serverName);
     if (config[serverName].active) {
-      activeServersContainer.appendChild(serverControls);
-    } else {
-      inactiveServersContainer.appendChild(serverControls);
+      const serverControls = createServerControls(serverName);
+      appContainer.appendChild(serverControls);
     }
   });
 
-  // Update inactive servers count
-  const inactiveCount = sortedServers.filter(name => !config[name].active).length;
-  document.getElementById('inactive-servers-header').querySelector('.arrow').textContent = 
-    `▶ Inactive Servers (${inactiveCount})`;
+  // Render inactive servers
+  const inactiveServers = sortedServers.filter(name => !config[name].active);
+  if (inactiveServers.length > 0) {
+    const inactiveHeader = document.createElement('div');
+    inactiveHeader.id = 'inactive-servers-header';
+    inactiveHeader.className = 'inactive-servers-header';
+    inactiveHeader.innerHTML = `<span class="arrow">▶</span> Inactive Servers (${inactiveServers.length})`;
+    inactiveHeader.onclick = toggleInactiveServers;
+    appContainer.appendChild(inactiveHeader);
+
+    const inactiveContent = document.createElement('div');
+    inactiveContent.id = 'inactive-servers-content';
+    inactiveContent.style.display = 'none';
+    appContainer.appendChild(inactiveContent);
+
+    inactiveServers.forEach(serverName => {
+      const serverControls = createServerControls(serverName);
+      inactiveContent.appendChild(serverControls);
+    });
+  }
+
+  // Update all server statuses
+  sortedServers.forEach(updateServerStatus);
 }
+
 
 // Function to toggle inactive servers visibility
 function toggleInactiveServers() {
