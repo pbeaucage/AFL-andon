@@ -314,6 +314,12 @@
 </head>
 <body>
     <h1>Server Control Panel</h1>
+            <div class="import-buttons">
+        <button id="import-config-btn" class="import-btn">Import Config</button>
+        <button id="import-ssh-key-btn" class="import-btn">Import SSH Key</button>
+    </div>
+<button id="add-server-btn" class="add-server-btn">Add New Server</button>
+    
     <div id="app">
         <div id="active-servers"></div>
         <div id="inactive-servers">
@@ -322,12 +328,7 @@
             </div>
             <div id="inactive-servers-content"></div>
         </div>
-            <div class="import-buttons">
-        <button id="import-config-btn" class="import-btn">Import Config</button>
-        <button id="import-ssh-key-btn" class="import-btn">Import SSH Key</button>
-    </div>
-<button id="add-server-btn" class="add-server-btn">Add New Server</button>
-    
+
     </div>
     <div id="log-modal" class="modal">
         <div class="log-modal-content">
