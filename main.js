@@ -1,4 +1,4 @@
-// main.js (Main process)
+// main.js
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs').promises;
@@ -9,7 +9,7 @@ let sshOps;
 const configPath = path.join(app.getPath('userData'), 'config.json');
 const sshKeyPath = path.join(app.getPath('userData'), 'id_rsa');
 
-function createWindow() {
+async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
@@ -19,14 +19,14 @@ function createWindow() {
     }
   });
 
-  mainWindow.loadFile('index.html');
+  await mainWindow.loadFile('index.html');
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   sshOps = new SSHOperations(configPath, sshKeyPath);
-  createWindow();
+  await sshOps.initialize();
+  await createWindow();
 });
-
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
@@ -126,21 +126,22 @@ ipcMain.handle('import-ssh-key', async () => {
     return { success: false, error: error.message };
   }
 });
-
-ipcMain.handle('get-config', () => {
+ipcMain.handle('get-config', async () => {
+  await sshOps.loadConfig();  // Reload config before sending
   return sshOps.config;
 });
 
 ipcMain.handle('save-config', async (event, newConfig) => {
   try {
     await fs.writeFile(configPath, JSON.stringify(newConfig, null, 2));
-    sshOps.loadConfig(configPath);
+    await sshOps.loadConfig();  // Reload config after saving
     return { success: true };
   } catch (error) {
     console.error('Error saving config:', error);
     return { success: false, error: error.message };
   }
 });
+
 
 ipcMain.handle('join-server', async (event, serverName) => {
   try {

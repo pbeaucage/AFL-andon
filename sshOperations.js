@@ -6,12 +6,18 @@ class SSHOperations {
   constructor(configPath, sshKeyPath) {
     this.config = {};
     this.sshKeyPath = sshKeyPath;
-    this.loadConfig(configPath);
+    this.configPath = configPath;
   }
 
-  loadConfig(configPath) {
+  async initialize() {
+    await this.loadConfig();
+    await this.loadSSHKey();
+  }
+
+  async loadConfig() {
     try {
-      this.config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      const configData = await fs.readFile(this.configPath, 'utf8');
+      this.config = JSON.parse(configData);
       // Set default values if not specified
       Object.keys(this.config).forEach(serverName => {
         const server = this.config[serverName];
@@ -24,8 +30,12 @@ class SSHOperations {
     }
   }
 
-  loadSSHKey(sshKeyPath) {
-    this.sshKeyPath = sshKeyPath;
+  async loadSSHKey() {
+    try {
+      this.sshKey = await fs.readFile(this.sshKeyPath);
+    } catch (error) {
+      console.error('Error loading SSH key:', error);
+    }
   }
 
   async executeCommand(serverName, command) {
@@ -59,11 +69,10 @@ class SSHOperations {
         host: serverConfig.host,
         port: 22,
         username: process.env.SSH_USERNAME,
-        privateKey: fs.readFileSync(this.sshKeyPath)
+        privateKey: this.sshKey
       });
     });
   }
-
   async startServer(serverName) {
     const serverConfig = this.config[serverName];
     const screenLogPath = path.join('.afl', `${serverConfig.screen_name}.screenlog`);
