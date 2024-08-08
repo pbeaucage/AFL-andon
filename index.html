@@ -310,16 +310,60 @@
             text-decoration: none;
             cursor: pointer;
         }
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .header-container h1 {
+            margin: 0;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .header-button {
+            padding: 8px 15px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .header-button:hover {
+            background-color: #2980b9;
+        }
+
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .header-buttons {
+                margin-top: 10px;
+            }
+        }
+
     </style>
 </head>
 <body>
-    <h1>Server Control Panel</h1>
-            <div class="import-buttons">
-        <button id="import-config-btn" class="import-btn">Import Config</button>
-        <button id="import-ssh-key-btn" class="import-btn">Import SSH Key</button>
+    <div class="header-container">
+        <h1>AFL Server Control</h1>
+        <div class="header-buttons">
+            <button id="import-config-btn" class="header-button">Import Config</button>
+            <button id="import-ssh-key-btn" class="header-button">Import SSH Key</button>
+            <button id="add-server-btn" class="header-button">Add New Server</button>
+        </div>
     </div>
-<button id="add-server-btn" class="add-server-btn">Add New Server</button>
-    
     <div id="app">
         <div id="active-servers"></div>
         <div id="inactive-servers">
