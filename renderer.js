@@ -12,6 +12,17 @@ async function loadConfig() {
 async function saveConfig() {
   await ipcRenderer.invoke('save-config', config);
 }
+async function checkHttpEndpoint(serverName) {
+  const serverConfig = config[serverName];
+  const url = `http://${serverConfig.host}:${serverConfig.httpPort}/get_server_time`;
+  try {
+    const response = await fetch(url, { timeout: 5000 });
+    return response.ok;
+  } catch (error) {
+    console.error(`HTTP check failed for ${serverName}:`, error);
+    return false;
+  }
+}
 
 async function updateServerStatus(serverName) {
   try {
