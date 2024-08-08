@@ -265,13 +265,9 @@ function toggleServerActive(serverName) {
 
 function renderServers() {
   const appContainer = document.getElementById('app');
-  const inactiveServersContainer = document.getElementById('inactive-servers-content');
   
   // Clear existing content
   appContainer.innerHTML = '';
-  if (inactiveServersContainer) {
-    inactiveServersContainer.innerHTML = '';
-  }
 
   // Sort servers: active first, then alphabetically
   const sortedServers = Object.keys(config).sort((a, b) => {
@@ -289,45 +285,42 @@ function renderServers() {
     }
   });
 
-  // Render inactive servers
+  // Always create the inactive servers section
   const inactiveServers = sortedServers.filter(name => !config[name].active);
-  if (inactiveServers.length > 0) {
-    const inactiveHeader = document.createElement('div');
-    inactiveHeader.id = 'inactive-servers-header';
-    inactiveHeader.className = 'inactive-servers-header';
-    inactiveHeader.innerHTML = `<span class="arrow">▶</span> Inactive Servers (${inactiveServers.length})`;
-    inactiveHeader.onclick = toggleInactiveServers;
-    appContainer.appendChild(inactiveHeader);
+  
+  const inactiveHeader = document.createElement('div');
+  inactiveHeader.id = 'inactive-servers-header';
+  inactiveHeader.className = 'inactive-servers-header';
+  inactiveHeader.innerHTML = `<span class="arrow">▶</span> Inactive Servers (${inactiveServers.length})`;
+  inactiveHeader.onclick = toggleInactiveServers;
+  appContainer.appendChild(inactiveHeader);
 
-    const inactiveContent = document.createElement('div');
-    inactiveContent.id = 'inactive-servers-content';
-    inactiveContent.style.display = 'none';
-    appContainer.appendChild(inactiveContent);
+  const inactiveContent = document.createElement('div');
+  inactiveContent.id = 'inactive-servers-content';
+  inactiveContent.style.display = 'none';
+  appContainer.appendChild(inactiveContent);
 
-    inactiveServers.forEach(serverName => {
-      const serverControls = createServerControls(serverName);
-      inactiveContent.appendChild(serverControls);
-    });
-  }
+  inactiveServers.forEach(serverName => {
+    const serverControls = createServerControls(serverName);
+    inactiveContent.appendChild(serverControls);
+  });
 
   // Update all server statuses
   sortedServers.forEach(updateServerStatus);
 }
-
 
 // Function to toggle inactive servers visibility
 function toggleInactiveServers() {
   const content = document.getElementById('inactive-servers-content');
   const arrow = document.querySelector('#inactive-servers-header .arrow');
   if (content.style.display === 'none' || content.style.display === '') {
-    content.style.display = 'block';
-    arrow.classList.add('down');
+    content.style.display = 'grid';
+    arrow.textContent = '▼';
   } else {
     content.style.display = 'none';
-    arrow.classList.remove('down');
+    arrow.textContent = '▶';
   }
 }
-
 async function importConfig() {
   try {
     const result = await ipcRenderer.invoke('import-config');
