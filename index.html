@@ -9,26 +9,34 @@
             font-family: Arial, sans-serif;
             line-height: 1.6;
             color: #333;
-            max-width: 800px;
-            margin: 0 auto;
             padding: 20px;
             background-color: #f4f4f4;
         }
-        h1 {
-            text-align: center;
-            color: #2c3e50;
-        }
+
         #app {
             display: grid;
             grid-template-columns: 1fr;
             gap: 20px;
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
+            padding: 0 20px;
         }
 
-        @media (min-width: 768px) {
+        @media (min-width: 640px) {
             #app {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            }
+        }
+
+        @media (min-width: 1024px) {
+            #app {
+                grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            }
+        }
+
+        @media (min-width: 1400px) {
+            #app {
+                grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
             }
         }
 
@@ -72,6 +80,27 @@
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
+        }
+
+        #inactive-servers-header {
+            grid-column: 1 / -1;
+            background-color: #ecf0f1;
+            padding: 10px;
+            margin-top: 20px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        #inactive-servers-content {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: inherit;
+            gap: inherit;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
         }
 
         .status-indicator {
@@ -195,14 +224,6 @@
             margin-top: 20px;
             cursor: pointer;
             border-radius: 4px;
-        }
-
-        #inactive-servers-header:hover {
-            background-color: #d5dbdb;
-        }
-
-        #inactive-servers-content {
-            display: none;
         }
 
         .arrow {
