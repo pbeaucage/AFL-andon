@@ -1,10 +1,13 @@
 // main.js (Main process)
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs').promises;
 const SSHOperations = require('./sshOperations');
 
 let mainWindow;
-const sshOps = new SSHOperations(path.join(__dirname, 'config.json'));
+let sshOps;
+const configPath = path.join(app.getPath('userData'), 'config.json');
+const sshKeyPath = path.join(app.getPath('userData'), 'id_rsa');
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -19,8 +22,10 @@ function createWindow() {
   mainWindow.loadFile('index.html');
 }
 
-
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  sshOps = new SSHOperations(configPath, sshKeyPath);
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
@@ -79,6 +84,49 @@ ipcMain.handle('get-server-log', async (event, serverName) => {
   }
 });
 
+
+ipcMain.handle('import-config', async () => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile'],
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    });
+
+    if (result.canceled) {
+      return { success: false, message: 'File selection was canceled.' };
+    }
+
+    const sourcePath = result.filePaths[0];
+    await fs.copyFile(sourcePath, configPath);
+    sshOps.loadConfig(configPath);
+    return { success: true, message: 'Config file imported successfully.' };
+  } catch (error) {
+    console.error('Error importing config:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('import-ssh-key', async () => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile']
+    });
+
+    if (result.canceled) {
+      return { success: false, message: 'File selection was canceled.' };
+    }
+
+    const sourcePath = result.filePaths[0];
+    await fs.copyFile(sourcePath, sshKeyPath);
+    await fs.chmod(sshKeyPath, 0o600); // Ensure correct permissions
+    sshOps.loadSSHKey(sshKeyPath);
+    return { success: true, message: 'SSH key imported successfully.' };
+  } catch (error) {
+    console.error('Error importing SSH key:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 ipcMain.handle('get-config', () => {
   return sshOps.config;
 });
@@ -86,7 +134,7 @@ ipcMain.handle('get-config', () => {
 ipcMain.handle('save-config', async (event, newConfig) => {
   try {
     await fs.writeFile(configPath, JSON.stringify(newConfig, null, 2));
-    sshOps.loadConfig(configPath); // Reload the config in the SSHOperations instance
+    sshOps.loadConfig(configPath);
     return { success: true };
   } catch (error) {
     console.error('Error saving config:', error);

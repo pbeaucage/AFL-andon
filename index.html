@@ -192,11 +192,30 @@
         .arrow.down {
             transform: rotate(90deg);
         }
+
+        .import-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .import-btn {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .import-btn:hover {
+            background-color: #2980b9;
+        }
     </style>
 </head>
 <body>
     <h1>Server Control Panel</h1>
-    <button id="add-server-btn" class="add-server-btn">Add New Server</button>
     <div id="app">
         <div id="active-servers"></div>
         <div id="inactive-servers">
@@ -229,6 +248,12 @@
                 </div>
                 <button type="submit" class="form-submit">Save Server</button>
             </form>
+    <div class="import-buttons">
+        <button id="import-config-btn" class="import-btn">Import Config</button>
+        <button id="import-ssh-key-btn" class="import-btn">Import SSH Key</button>
+    </div>
+<button id="add-server-btn" class="add-server-btn">Add New Server</button>
+    
         </div>
     </div>
     <script src="renderer.js"></script>

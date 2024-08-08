@@ -249,6 +249,36 @@ function toggleInactiveServers() {
   }
 }
 
+async function importConfig() {
+  try {
+    const result = await ipcRenderer.invoke('import-config');
+    if (result.success) {
+      alert(result.message);
+      await loadConfig();
+      renderServers();
+    } else {
+      alert(result.message || result.error);
+    }
+  } catch (error) {
+    console.error('Error importing config:', error);
+    alert('Failed to import config file.');
+  }
+}
+
+async function importSSHKey() {
+  try {
+    const result = await ipcRenderer.invoke('import-ssh-key');
+    if (result.success) {
+      alert(result.message);
+    } else {
+      alert(result.message || result.error);
+    }
+  } catch (error) {
+    console.error('Error importing SSH key:', error);
+    alert('Failed to import SSH key.');
+  }
+}
+
 // Wait for the DOM to be fully loaded before creating UI elements
 document.addEventListener('DOMContentLoaded', async () => {
   await loadConfig();
@@ -259,6 +289,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelector('.modal .close').addEventListener('click', closeServerModal);
   document.getElementById('server-form').addEventListener('submit', handleServerFormSubmit);
   document.getElementById('inactive-servers-header').addEventListener('click', toggleInactiveServers);
+  document.getElementById('import-config-btn').addEventListener('click', importConfig);
+  document.getElementById('import-ssh-key-btn').addEventListener('click', importSSHKey);
 
   // Update statuses every 5 seconds
   setInterval(() => {
