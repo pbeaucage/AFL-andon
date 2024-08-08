@@ -125,7 +125,7 @@ class SSHOperations {
     return { success: true, status: result.output.includes(serverConfig.screen_name) };
   }
 
-  async getServerLog(serverName, lines = 100) {
+  async getServerLog(serverName, lines = 200) {
     const serverConfig = this.config[serverName];
     const logPath = path.join('.afl', `${serverConfig.screen_name}.screenlog`);
     const logCommand = `tail -n ${lines} $\{HOME}/${logPath}`;

@@ -66,12 +66,23 @@ async function controlServer(serverName, action) {
   }
 }
 
+
 async function viewServerLog(serverName) {
   try {
-    const result = await ipcRenderer.invoke('get-server-log', serverName);
+    const result = await ipcRenderer.invoke('get-server-log', serverName, 200); // Request 200 lines
     if (result.success) {
-      console.log(result.output);
-      alert(result.output); // Temporary solution, replace with a better UI
+      const logModal = document.getElementById('log-modal');
+      const logContent = document.getElementById('log-content');
+      const logTitle = document.getElementById('log-title');
+
+      logTitle.textContent = `Server Log: ${serverName}`;
+      logContent.textContent = result.output;
+
+      // Show the modal
+      logModal.style.display = 'block';
+
+      // Scroll to the bottom
+      logContent.scrollTop = logContent.scrollHeight;
     } else if (result.sshDown) {
       console.log(`SSH is down for ${serverName}`);
       alert(`Unable to get log: SSH is down for ${serverName}`);
@@ -82,6 +93,12 @@ async function viewServerLog(serverName) {
   } catch (error) {
     console.error(`Error getting log for ${serverName}:`, error);
   }
+}
+
+// Function to close the log modal
+function closeLogModal() {
+  const logModal = document.getElementById('log-modal');
+  logModal.style.display = 'none';
 }
 
 
