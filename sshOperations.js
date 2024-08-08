@@ -43,10 +43,10 @@ class SSHOperations {
   }
 
   async executeCommand(serverName, command) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const serverConfig = this.config[serverName];
       if (!serverConfig) {
-        reject(new Error(`Server ${serverName} not found in config`));
+        resolve({ success: false, sshDown: true });
         return;
       }
 
@@ -55,20 +55,23 @@ class SSHOperations {
         conn.exec(command, (err, stream) => {
           if (err) {
             conn.end();
-            reject(err);
+            resolve({ success: false, sshDown: true });
             return;
           }
 
           let output = '';
           stream.on('close', (code, signal) => {
             conn.end();
-            resolve({ output, code, signal });
+            resolve({ success: true, output, code, signal });
           }).on('data', (data) => {
             output += data;
           }).stderr.on('data', (data) => {
             output += data;
           });
         });
+      }).on('error', (err) => {
+        console.error(`SSH connection error for ${serverName}:`, err);
+        resolve({ success: false, sshDown: true });
       }).connect({
         host: serverConfig.host,
         port: 22,
@@ -77,6 +80,7 @@ class SSHOperations {
       });
     });
   }
+
   async startServer(serverName) {
     const serverConfig = this.config[serverName];
     const screenLogPath = path.join('.afl', `${serverConfig.screen_name}.screenlog`);
@@ -91,7 +95,7 @@ class SSHOperations {
     } else if (serverConfig.server_script) {
       startCommand = `screen -d -m -L -Logfile $\{HOME}/${screenLogPath} -S ${serverConfig.screen_name} ${serverConfig.server_script}`;
     } else {
-      throw new Error('Neither server_module nor server_script specified in config');
+      return { success: false, error: 'Neither server_module nor server_script specified in config' };
     }
 
     return this.executeCommand(serverName, startCommand);
@@ -104,15 +108,21 @@ class SSHOperations {
   }
 
   async restartServer(serverName) {
-    await this.stopServer(serverName);
+    const stopResult = await this.stopServer(serverName);
+    if (!stopResult.success && !stopResult.sshDown) {
+      return stopResult;
+    }
     return this.startServer(serverName);
   }
 
   async getServerStatus(serverName) {
     const serverConfig = this.config[serverName];
     const statusCommand = 'screen -ls';
-    const { output } = await this.executeCommand(serverName, statusCommand);
-    return output.includes(serverConfig.screen_name);
+    const result = await this.executeCommand(serverName, statusCommand);
+    if (!result.success) {
+      return { success: false, sshDown: true };
+    }
+    return { success: true, status: result.output.includes(serverConfig.screen_name) };
   }
 
   async getServerLog(serverName, lines = 100) {

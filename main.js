@@ -38,52 +38,34 @@ app.on('activate', () => {
     createWindow();
   }
 });
-
 ipcMain.handle('start-server', async (event, serverName) => {
-  try {
-    await sshOps.startServer(serverName);
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
+  const result = await sshOps.startServer(serverName);
+  return result.sshDown ? { success: false, sshDown: true } : result;
 });
 
 ipcMain.handle('stop-server', async (event, serverName) => {
-  try {
-    await sshOps.stopServer(serverName);
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
+  const result = await sshOps.stopServer(serverName);
+  return result.sshDown ? { success: false, sshDown: true } : result;
 });
 
 ipcMain.handle('restart-server', async (event, serverName) => {
-  try {
-    await sshOps.restartServer(serverName);
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
+  const result = await sshOps.restartServer(serverName);
+  return result.sshDown ? { success: false, sshDown: true } : result;
 });
 
 ipcMain.handle('get-server-status', async (event, serverName) => {
-  try {
-    const status = await sshOps.getServerStatus(serverName);
-    return { success: true, status };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
+  return await sshOps.getServerStatus(serverName);
 });
 
 ipcMain.handle('get-server-log', async (event, serverName) => {
-  try {
-    const { output } = await sshOps.getServerLog(serverName);
-    return { success: true, log: output };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
+  const result = await sshOps.getServerLog(serverName);
+  return result.sshDown ? { success: false, sshDown: true } : result;
 });
 
+ipcMain.handle('join-server', async (event, serverName) => {
+  const result = await sshOps.joinServer(serverName);
+  return result.sshDown ? { success: false, sshDown: true } : result;
+});
 
 ipcMain.handle('import-config', async () => {
   try {
@@ -138,17 +120,6 @@ ipcMain.handle('save-config', async (event, newConfig) => {
     return { success: true };
   } catch (error) {
     console.error('Error saving config:', error);
-    return { success: false, error: error.message };
-  }
-});
-
-
-ipcMain.handle('join-server', async (event, serverName) => {
-  try {
-    const result = await sshOps.joinServer(serverName);
-    return { success: true, output: result.output };
-  } catch (error) {
-    console.error(`Error joining server ${serverName}:`, error);
     return { success: false, error: error.message };
   }
 });

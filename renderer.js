@@ -13,31 +13,22 @@ async function saveConfig() {
   await ipcRenderer.invoke('save-config', config);
 }
 
-async function controlServer(serverName, action) {
-  try {
-    const result = await ipcRenderer.invoke(`${action}-server`, serverName);
-    if (result.success) {
-      console.log(`${action} successful for ${serverName}`);
-      updateServerStatus(serverName);
-    } else {
-      console.error(`${action} failed for ${serverName}:`, result.error);
-    }
-  } catch (error) {
-    console.error(`Error during ${action} for ${serverName}:`, error);
-  }
-}
-
 async function updateServerStatus(serverName) {
   try {
-    const sshResult = await ipcRenderer.invoke('get-server-status', serverName);
+    const result = await ipcRenderer.invoke('get-server-status', serverName);
     const httpResult = await checkHttpEndpoint(serverName);
     
     const sshStatusElement = document.getElementById(`${serverName}-ssh-status`);
     const httpStatusElement = document.getElementById(`${serverName}-http-status`);
     
     if (sshStatusElement) {
-      sshStatusElement.textContent = sshResult.success && sshResult.status ? 'SSH UP' : 'SSH DOWN';
-      sshStatusElement.className = `status-indicator ${sshResult.success && sshResult.status ? 'status-up' : 'status-down'}`;
+      if (result.sshDown) {
+        sshStatusElement.textContent = 'SSH DOWN';
+        sshStatusElement.className = 'status-indicator status-down';
+      } else {
+        sshStatusElement.textContent = result.status ? 'SSH UP' : 'SSH DOWN';
+        sshStatusElement.className = `status-indicator ${result.status ? 'status-up' : 'status-down'}`;
+      }
     }
     if (httpStatusElement) {
       httpStatusElement.textContent = httpResult ? 'HTTP UP' : 'HTTP DOWN';
@@ -48,17 +39,40 @@ async function updateServerStatus(serverName) {
   }
 }
 
-async function checkHttpEndpoint(serverName) {
-  const { host, httpPort } = config[serverName];
-  const url = `http://${host}:${httpPort}/get_server_time`;
+async function controlServer(serverName, action) {
   try {
-    const response = await fetch(url, { timeout: 5000 });
-    return response.ok;
+    const result = await ipcRenderer.invoke(`${action}-server`, serverName);
+    if (result.success) {
+      console.log(`${action} successful for ${serverName}`);
+    } else if (result.sshDown) {
+      console.log(`SSH is down for ${serverName}`);
+    } else {
+      console.error(`${action} failed for ${serverName}`);
+    }
+    updateServerStatus(serverName);
   } catch (error) {
-    console.error(`HTTP check failed for ${serverName}:`, error);
-    return false;
+    console.error(`Error during ${action} for ${serverName}:`, error);
   }
 }
+
+async function viewServerLog(serverName) {
+  try {
+    const result = await ipcRenderer.invoke('get-server-log', serverName);
+    if (result.success) {
+      console.log(result.output);
+      alert(result.output); // Temporary solution, replace with a better UI
+    } else if (result.sshDown) {
+      console.log(`SSH is down for ${serverName}`);
+      alert(`Unable to get log: SSH is down for ${serverName}`);
+    } else {
+      console.error(`Failed to get log for ${serverName}`);
+      alert(`Failed to get log for ${serverName}`);
+    }
+  } catch (error) {
+    console.error(`Error getting log for ${serverName}:`, error);
+  }
+}
+
 
 function createServerControls(serverName) {
   const serverConfig = config[serverName];
@@ -142,19 +156,6 @@ function createServerControls(serverName) {
   return container;
 }
 
-async function viewServerLog(serverName) {
-  try {
-    const result = await ipcRenderer.invoke('get-server-log', serverName);
-    if (result.success) {
-      console.log(result.log);
-      alert(result.log); // Temporary solution, replace with a better UI
-    } else {
-      console.error(`Failed to get log for ${serverName}:`, result.error);
-    }
-  } catch (error) {
-    console.error(`Error getting log for ${serverName}:`, error);
-  }
-}
 function openServerModal(serverName = null) {
   const modal = document.getElementById('server-modal');
   const modalTitle = document.getElementById('modal-title');
