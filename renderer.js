@@ -29,16 +29,16 @@ async function updateServerStatus(serverName) {
     const result = await ipcRenderer.invoke('get-server-status', serverName);
     const httpResult = await checkHttpEndpoint(serverName);
     
-    const sshStatusElement = document.getElementById(`${serverName}-ssh-status`);
+    const screenStatusElement = document.getElementById(`${serverName}-screen-status`);
     const httpStatusElement = document.getElementById(`${serverName}-http-status`);
     
-    if (sshStatusElement) {
+    if (screenStatusElement) {
       if (result.sshDown) {
-        sshStatusElement.textContent = 'SSH DOWN';
-        sshStatusElement.className = 'status-indicator status-down';
+        screenStatusElement.textContent = 'SSH DOWN';
+        screenStatusElement.className = 'status-indicator status-down';
       } else {
-        sshStatusElement.textContent = result.status ? 'SSH UP' : 'SSH DOWN';
-        sshStatusElement.className = `status-indicator ${result.status ? 'status-up' : 'status-down'}`;
+        screenStatusElement.textContent = result.status ? 'SCREEN ACTIVE' : 'SCREEN INACTIVE';
+        screenStatusElement.className = `status-indicator ${result.status ? 'status-up' : 'status-down'}`;
       }
     }
     if (httpStatusElement) {
@@ -105,7 +105,7 @@ function closeLogModal() {
 function createServerControls(serverName) {
   const serverConfig = config[serverName];
   const container = document.createElement('div');
-  container.className = `server-container`;
+  container.className = 'server-container';
   
   const headerElement = document.createElement('div');
   headerElement.className = 'server-header';
@@ -138,14 +138,13 @@ function createServerControls(serverName) {
   infoElement.textContent = `SSH: ${serverConfig.username}@${serverConfig.host}, HTTP: ${serverConfig.host}:${serverConfig.httpPort}`;
   container.appendChild(infoElement);
 
-
   const statusContainer = document.createElement('div');
   statusContainer.className = 'status-indicators';
 
-  const sshStatusElement = document.createElement('span');
-  sshStatusElement.id = `${serverName}-ssh-status`;
-  sshStatusElement.className = 'status-indicator';
-  statusContainer.appendChild(sshStatusElement);
+  const screenStatusElement = document.createElement('span');
+  screenStatusElement.id = `${serverName}-screen-status`;
+  screenStatusElement.className = 'status-indicator';
+  statusContainer.appendChild(screenStatusElement);
 
   const httpStatusElement = document.createElement('span');
   httpStatusElement.id = `${serverName}-http-status`;
@@ -164,8 +163,6 @@ function createServerControls(serverName) {
     button.onclick = () => controlServer(serverName, action);
     controlsContainer.appendChild(button);
   });
-
-
 
   const logButton = document.createElement('button');
   logButton.textContent = 'View Log';
