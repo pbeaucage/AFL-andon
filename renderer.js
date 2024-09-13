@@ -429,15 +429,26 @@ async function importSSHKey() {
 
 async function joinServer(serverName) {
   try {
-    const result = await ipcRenderer.invoke('join-server', serverName);
+    const result = await ipcRenderer.invoke('start-ssh-session', serverName);
     if (result.success) {
-      console.log(`Joined server ${serverName}`);
-      // You might want to handle this differently since joining a server
-      // typically means taking over the terminal
-      alert(`Joined server ${serverName}. Check your terminal.`);
+      showTerminalModal();
+      sshStream = result.stream;
+
+      sshStream.on('data', (data) => {
+        terminal.write(data.toString());
+      });
+
+      sshStream.on('close', () => {
+        terminal.writeln('Connection closed');
+        sshStream = null;
+      });
+
+      // Send the 'join' command
+      const serverConfig = config[serverName];
+      sshStream.write(`screen -x ${serverConfig.screen_name}\n`);
     } else {
-      console.error(`Failed to join server ${serverName}:`, result.error);
-      alert(`Failed to join server ${serverName}: ${result.error}`);
+      console.error(`Failed to join server ${serverName}`);
+      alert(`Failed to join server ${serverName}`);
     }
   } catch (error) {
     console.error(`Error joining server ${serverName}:`, error);
