@@ -126,6 +126,8 @@ ipcMain.handle('save-config', async (event, newConfig) => {
   }
 });
 
+let sshConnections = {};
+
 ipcMain.handle('start-ssh-session', async (event, serverName) => {
   const serverConfig = sshOps.config[serverName];
   const conn = new Client();
@@ -133,12 +135,23 @@ ipcMain.handle('start-ssh-session', async (event, serverName) => {
   return new Promise((resolve, reject) => {
     conn.on('ready', () => {
       conn.shell((err, stream) => {
-        if (err) reject(err);
-        resolve({ success: true, stream });
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        sshConnections[serverName] = { conn, stream };
+
+        stream.on('data', (data) => {
+          mainWindow.webContents.send('ssh-data', { serverName, data: data.toString() });
+        });
 
         stream.on('close', () => {
-          conn.end();
+          delete sshConnections[serverName];
+          mainWindow.webContents.send('ssh-closed', serverName);
         });
+
+        resolve({ success: true });
       });
     }).on('error', (err) => {
       reject(err);
@@ -151,10 +164,24 @@ ipcMain.handle('start-ssh-session', async (event, serverName) => {
   });
 });
 
-ipcMain.on('ssh-data', (event, data) => {
-  // This will be implemented in the renderer process
+ipcMain.on('ssh-data', (event, { serverName, data }) => {
+  const connection = sshConnections[serverName];
+  if (connection && connection.stream) {
+    connection.stream.write(data);
+  }
 });
 
-ipcMain.on('terminal-resize', (event, { cols, rows }) => {
-  // This will be implemented in the renderer process
+ipcMain.on('resize-pty', (event, { serverName, cols, rows }) => {
+  const connection = sshConnections[serverName];
+  if (connection && connection.stream) {
+    connection.stream.setWindow(rows, cols);
+  }
+});
+
+ipcMain.on('close-ssh-session', (event, serverName) => {
+  const connection = sshConnections[serverName];
+  if (connection) {
+    connection.conn.end();
+    delete sshConnections[serverName];
+  }
 });
