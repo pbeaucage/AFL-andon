@@ -10,6 +10,8 @@ let editingServer = null;
 let terminal;
 let sshStream;
 
+let currentServerName;
+
 function initializeTerminal() {
   terminal = new Terminal();
   const fitAddon = new FitAddon();
@@ -20,16 +22,33 @@ function initializeTerminal() {
   fitAddon.fit();
 
   terminal.onData(data => {
-    if (sshStream) {
-      sshStream.write(data);
+    if (currentServerName) {
+      ipcRenderer.send('ssh-data', { serverName: currentServerName, data });
     }
   });
 
   window.addEventListener('resize', () => {
     fitAddon.fit();
-    if (sshStream) {
-      const dimensions = fitAddon.proposeDimensions();
-      ipcRenderer.send('terminal-resize', dimensions);
+    if (currentServerName) {
+      const dimensions = terminal.getDimensions();
+      ipcRenderer.send('resize-pty', { 
+        serverName: currentServerName, 
+        cols: dimensions.cols, 
+        rows: dimensions.rows 
+      });
+    }
+  });
+
+  ipcRenderer.on('ssh-data', (event, { serverName, data }) => {
+    if (serverName === currentServerName) {
+      terminal.write(data);
+    }
+  });
+
+  ipcRenderer.on('ssh-closed', (event, serverName) => {
+    if (serverName === currentServerName) {
+      terminal.writeln('\r\nConnection closed');
+      currentServerName = null;
     }
   });
 }
@@ -39,20 +58,17 @@ async function joinServer(serverName) {
     const result = await ipcRenderer.invoke('start-ssh-session', serverName);
     if (result.success) {
       showTerminalModal();
-      sshStream = result.stream;
+      currentServerName = serverName;
 
-      sshStream.on('data', (data) => {
-        terminal.write(data.toString());
-      });
-
-      sshStream.on('close', () => {
-        terminal.writeln('Connection closed');
-        sshStream = null;
-      });
-
+      terminal.clear();
+      terminal.writeln(`Connected to ${serverName}`);
+      
       // Send the 'join' command
       const serverConfig = config[serverName];
-      sshStream.write(`screen -x ${serverConfig.screen_name}\n`);
+      ipcRenderer.send('ssh-data', { 
+        serverName, 
+        data: `screen -x ${serverConfig.screen_name}\n` 
+      });
     } else {
       console.error(`Failed to join server ${serverName}`);
       alert(`Failed to join server ${serverName}`);
@@ -74,12 +90,11 @@ function showTerminalModal() {
 function closeTerminalModal() {
   const modal = document.getElementById('terminal-modal');
   modal.style.display = 'none';
-  if (sshStream) {
-    sshStream.end();
-    sshStream = null;
+  if (currentServerName) {
+    ipcRenderer.send('close-ssh-session', currentServerName);
+    currentServerName = null;
   }
 }
-
 
 async function loadConfig() {
   config = await ipcRenderer.invoke('get-config');
