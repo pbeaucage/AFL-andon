@@ -1,5 +1,7 @@
 // main.js
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+
+const { Client } = require('ssh2');  // Correct import for ssh2
 const path = require('path');
 const fs = require('fs').promises;
 const SSHOperations = require('./sshOperations');
@@ -138,11 +140,13 @@ ipcMain.handle('start-ssh-session', async (event, serverName) => {
           conn.end();
         });
       });
+    }).on('error', (err) => {
+      reject(err);
     }).connect({
       host: serverConfig.host,
       port: 22,
       username: serverConfig.username,
-      privateKey: require('fs').readFileSync(sshKeyPath)
+      privateKey: fs.readFileSync(sshKeyPath)
     });
   });
 });
