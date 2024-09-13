@@ -1,4 +1,5 @@
 const { Client } = require('ssh2');
+const SSH2 = require('ssh2');
 const fs = require('fs').promises;
 const path = require('path');
 
@@ -7,16 +8,16 @@ class SSHOperations {
     this.config = {};
     this.sshKeyPath = sshKeyPath;
     this.configPath = configPath;
+    this.loadConfig();
   }
-
   async initialize() {
     await this.loadConfig();
     await this.loadSSHKey();
   }
 
-  async loadConfig() {
+  loadConfig() {
     try {
-      const configData = await fs.readFile(this.configPath, 'utf8');
+      const configData = fs.readFileSync(this.configPath, 'utf8');
       this.config = JSON.parse(configData);
       // Set default values if not specified
       Object.keys(this.config).forEach(serverName => {
@@ -42,41 +43,38 @@ class SSHOperations {
     }
   }
 
-  async executeCommand(serverName, command) {
-    return new Promise((resolve) => {
+  executeCommand(serverName, command) {
+    return new Promise((resolve, reject) => {
       const serverConfig = this.config[serverName];
       if (!serverConfig) {
-        resolve({ success: false, sshDown: true });
+        reject(new Error(`Server ${serverName} not found in config`));
         return;
       }
 
-      const conn = new Client();
+      const conn = new SSH2.Client();
       conn.on('ready', () => {
         conn.exec(command, (err, stream) => {
           if (err) {
             conn.end();
-            resolve({ success: false, sshDown: true });
+            reject(err);
             return;
           }
 
           let output = '';
           stream.on('close', (code, signal) => {
             conn.end();
-            resolve({ success: true, output, code, signal });
+            resolve({ output, code, signal });
           }).on('data', (data) => {
             output += data;
           }).stderr.on('data', (data) => {
             output += data;
           });
         });
-      }).on('error', (err) => {
-        console.error(`SSH connection error for ${serverName}:`, err);
-        resolve({ success: false, sshDown: true });
       }).connect({
         host: serverConfig.host,
         port: 22,
         username: serverConfig.username,
-        privateKey: this.sshKey
+        privateKey: fs.readFileSync(this.sshKeyPath)
       });
     });
   }
