@@ -10,6 +10,7 @@ let editingServer = null;
 let terminal;
 let sshStream;
 
+let terminal;
 let currentServerName;
 
 function initializeTerminal() {
@@ -24,18 +25,6 @@ function initializeTerminal() {
   terminal.onData(data => {
     if (currentServerName) {
       ipcRenderer.send('ssh-data', { serverName: currentServerName, data });
-    }
-  });
-
-  window.addEventListener('resize', () => {
-    fitAddon.fit();
-    if (currentServerName) {
-      const dimensions = terminal.getDimensions();
-      ipcRenderer.send('resize-pty', { 
-        serverName: currentServerName, 
-        cols: dimensions.cols, 
-        rows: dimensions.rows 
-      });
     }
   });
 
@@ -59,16 +48,8 @@ async function joinServer(serverName) {
     if (result.success) {
       showTerminalModal();
       currentServerName = serverName;
-
       terminal.clear();
       terminal.writeln(`Connected to ${serverName}`);
-      
-      // Send the 'join' command
-      const serverConfig = config[serverName];
-      ipcRenderer.send('ssh-data', { 
-        serverName, 
-        data: `screen -x ${serverConfig.screen_name}\n` 
-      });
     } else {
       console.error(`Failed to join server ${serverName}`);
       alert(`Failed to join server ${serverName}`);
