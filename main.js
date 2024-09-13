@@ -123,3 +123,34 @@ ipcMain.handle('save-config', async (event, newConfig) => {
     return { success: false, error: error.message };
   }
 });
+
+ipcMain.handle('start-ssh-session', async (event, serverName) => {
+  const serverConfig = sshOps.config[serverName];
+  const conn = new Client();
+
+  return new Promise((resolve, reject) => {
+    conn.on('ready', () => {
+      conn.shell((err, stream) => {
+        if (err) reject(err);
+        resolve({ success: true, stream });
+
+        stream.on('close', () => {
+          conn.end();
+        });
+      });
+    }).connect({
+      host: serverConfig.host,
+      port: 22,
+      username: serverConfig.username,
+      privateKey: require('fs').readFileSync(sshKeyPath)
+    });
+  });
+});
+
+ipcMain.on('ssh-data', (event, data) => {
+  // This will be implemented in the renderer process
+});
+
+ipcMain.on('terminal-resize', (event, { cols, rows }) => {
+  // This will be implemented in the renderer process
+});

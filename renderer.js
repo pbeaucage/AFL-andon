@@ -1,9 +1,85 @@
 // renderer.js (Renderer process)
 const { ipcRenderer } = require('electron');
+const { Terminal } = require('xterm');
+const { FitAddon } = require('xterm-addon-fit');
 const fetch = require('node-fetch');
 
 let config;
 let editingServer = null;
+
+let terminal;
+let sshStream;
+
+function initializeTerminal() {
+  terminal = new Terminal();
+  const fitAddon = new FitAddon();
+  terminal.loadAddon(fitAddon);
+
+  const terminalContainer = document.getElementById('terminal-container');
+  terminal.open(terminalContainer);
+  fitAddon.fit();
+
+  terminal.onData(data => {
+    if (sshStream) {
+      sshStream.write(data);
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    fitAddon.fit();
+    if (sshStream) {
+      const dimensions = fitAddon.proposeDimensions();
+      ipcRenderer.send('terminal-resize', dimensions);
+    }
+  });
+}
+
+async function joinServer(serverName) {
+  try {
+    const result = await ipcRenderer.invoke('start-ssh-session', serverName);
+    if (result.success) {
+      showTerminalModal();
+      sshStream = result.stream;
+
+      sshStream.on('data', (data) => {
+        terminal.write(data.toString());
+      });
+
+      sshStream.on('close', () => {
+        terminal.writeln('Connection closed');
+        sshStream = null;
+      });
+
+      // Send the 'join' command
+      const serverConfig = config[serverName];
+      sshStream.write(`screen -x ${serverConfig.screen_name}\n`);
+    } else {
+      console.error(`Failed to join server ${serverName}`);
+      alert(`Failed to join server ${serverName}`);
+    }
+  } catch (error) {
+    console.error(`Error joining server ${serverName}:`, error);
+    alert(`Error joining server ${serverName}: ${error.message}`);
+  }
+}
+
+function showTerminalModal() {
+  const modal = document.getElementById('terminal-modal');
+  modal.style.display = 'block';
+  if (!terminal) {
+    initializeTerminal();
+  }
+}
+
+function closeTerminalModal() {
+  const modal = document.getElementById('terminal-modal');
+  modal.style.display = 'none';
+  if (sshStream) {
+    sshStream.end();
+    sshStream = null;
+  }
+}
+
 
 async function loadConfig() {
   config = await ipcRenderer.invoke('get-config');
@@ -382,15 +458,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('import-ssh-key-btn').addEventListener('click', importSSHKey);
   document.querySelector('.close-log').addEventListener('click', closeLogModal);
 
-  // Close log modal when clicking outside of it
+  document.querySelector('.close-terminal').addEventListener('click', closeTerminalModal);
+
   window.onclick = function(event) {
+    const termModal = document.getElementById('terminal-modal');
+
     const logModal = document.getElementById('log-modal');
     if (event.target == logModal) {
       logModal.style.display = 'none';
     }
+    if (event.target == termModal) {
+      closeTerminalModal();
+    }
   }
-
-
+  
   // Update statuses every 5 seconds
   setInterval(() => {
     if (config) {
