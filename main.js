@@ -2,7 +2,6 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 
 const { Client } = require('ssh2');  // Correct import for ssh2
-const SSH2 = require('ssh2');
 const path = require('path');
 const fs = require('fs').promises;
 const SSHOperations = require('./sshOperations');
@@ -128,9 +127,10 @@ ipcMain.handle('save-config', async (event, newConfig) => {
 });
 
 let sshConnections = {};
+
 ipcMain.handle('start-ssh-session', async (event, serverName) => {
   const serverConfig = sshOps.config[serverName];
-  const conn = new SSH2.Client();
+  const conn = new Client();
 
   return new Promise((resolve, reject) => {
     conn.on('ready', () => {
