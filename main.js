@@ -129,6 +129,7 @@ ipcMain.handle('save-config', async (event, newConfig) => {
 
 let sshConnections = {};
 
+
 ipcMain.handle('start-ssh-session', async (event, serverName) => {
   const serverConfig = sshOps.config[serverName];
   const conn = new Client();
@@ -163,6 +164,9 @@ ipcMain.handle('start-ssh-session', async (event, serverName) => {
       mainWindow.webContents.send('ssh-closed', serverName);
     });
 
+    // Send the 'screen -x' command
+    stream.write(`screen -x ${serverConfig.screen_name}\n`);
+
     return { success: true };
   } catch (error) {
     console.error(`SSH connection error for ${serverName}:`, error);
@@ -170,18 +174,10 @@ ipcMain.handle('start-ssh-session', async (event, serverName) => {
   }
 });
 
-
 ipcMain.on('ssh-data', (event, { serverName, data }) => {
   const connection = sshConnections[serverName];
   if (connection && connection.stream) {
     connection.stream.write(data);
-  }
-});
-
-ipcMain.on('resize-pty', (event, { serverName, cols, rows }) => {
-  const connection = sshConnections[serverName];
-  if (connection && connection.stream) {
-    connection.stream.setWindow(rows, cols);
   }
 });
 
@@ -192,3 +188,11 @@ ipcMain.on('close-ssh-session', (event, serverName) => {
     delete sshConnections[serverName];
   }
 });
+
+ipcMain.on('resize-pty', (event, { serverName, cols, rows }) => {
+  const connection = sshConnections[serverName];
+  if (connection && connection.stream) {
+    connection.stream.setWindow(rows, cols);
+  }
+});
+
