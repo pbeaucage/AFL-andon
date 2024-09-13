@@ -7,7 +7,6 @@ const fetch = require('node-fetch');
 let config;
 let editingServer = null;
 
-let terminal;
 let sshStream;
 
 let terminal;
@@ -423,34 +422,6 @@ async function importSSHKey() {
   }
 }
 
-async function joinServer(serverName) {
-  try {
-    const result = await ipcRenderer.invoke('start-ssh-session', serverName);
-    if (result.success) {
-      showTerminalModal();
-      sshStream = result.stream;
-
-      sshStream.on('data', (data) => {
-        terminal.write(data.toString());
-      });
-
-      sshStream.on('close', () => {
-        terminal.writeln('Connection closed');
-        sshStream = null;
-      });
-
-      // Send the 'join' command
-      const serverConfig = config[serverName];
-      sshStream.write(`screen -x ${serverConfig.screen_name}\n`);
-    } else {
-      console.error(`Failed to join server ${serverName}`);
-      alert(`Failed to join server ${serverName}`);
-    }
-  } catch (error) {
-    console.error(`Error joining server ${serverName}:`, error);
-    alert(`Error joining server ${serverName}: ${error.message}`);
-  }
-}
 // Wait for the DOM to be fully loaded before creating UI elements
 document.addEventListener('DOMContentLoaded', async () => {
   await loadConfig();
