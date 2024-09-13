@@ -2,6 +2,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 
 const { Client } = require('ssh2');  // Correct import for ssh2
+const SSH2 = require('ssh2');
 const path = require('path');
 const fs = require('fs').promises;
 const SSHOperations = require('./sshOperations');
@@ -132,37 +133,43 @@ ipcMain.handle('start-ssh-session', async (event, serverName) => {
   const serverConfig = sshOps.config[serverName];
   const conn = new Client();
 
-  return new Promise((resolve, reject) => {
-    conn.on('ready', () => {
-      conn.shell((err, stream) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-
-        sshConnections[serverName] = { conn, stream };
-
-        stream.on('data', (data) => {
-          mainWindow.webContents.send('ssh-data', { serverName, data: data.toString() });
-        });
-
-        stream.on('close', () => {
-          delete sshConnections[serverName];
-          mainWindow.webContents.send('ssh-closed', serverName);
-        });
-
-        resolve({ success: true });
+  try {
+    await new Promise((resolve, reject) => {
+      conn.on('ready', resolve);
+      conn.on('error', reject);
+      conn.connect({
+        host: serverConfig.host,
+        port: 22,
+        username: serverConfig.username,
+        privateKey: require('fs').readFileSync(sshKeyPath)
       });
-    }).on('error', (err) => {
-      reject(err);
-    }).connect({
-      host: serverConfig.host,
-      port: 22,
-      username: serverConfig.username,
-      privateKey: require('fs').readFileSync(sshKeyPath)
     });
-  });
+
+    const stream = await new Promise((resolve, reject) => {
+      conn.shell((err, stream) => {
+        if (err) reject(err);
+        else resolve(stream);
+      });
+    });
+
+    sshConnections[serverName] = { conn, stream };
+
+    stream.on('data', (data) => {
+      mainWindow.webContents.send('ssh-data', { serverName, data: data.toString() });
+    });
+
+    stream.on('close', () => {
+      delete sshConnections[serverName];
+      mainWindow.webContents.send('ssh-closed', serverName);
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error(`SSH connection error for ${serverName}:`, error);
+    return { success: false, error: error.message };
+  }
 });
+
 
 ipcMain.on('ssh-data', (event, { serverName, data }) => {
   const connection = sshConnections[serverName];
