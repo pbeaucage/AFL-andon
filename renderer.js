@@ -252,6 +252,7 @@ function createServerControls(serverName) {
   return container;
 }
 
+
 function openServerModal(serverName = null) {
   const modal = document.getElementById('server-modal');
   const modalTitle = document.getElementById('modal-title');
@@ -265,18 +266,34 @@ function openServerModal(serverName = null) {
     form.elements['server-name'].value = serverName;
     form.elements['server-host'].value = server.host;
     form.elements['server-username'].value = server.username;
-    form.elements['server-port'].value = server.httpPort;
-    form.elements['server-script'].value = server.server_script || server.server_module || '';
+    form.elements['server-http-port'].value = server.httpPort;
+    form.elements['server-screen-name'].value = server.screen_name;
+    form.elements['server-type'].value = server.server_script ? 'script' : 'module';
+    form.elements['server-script'].value = server.server_script || '';
+    form.elements['server-module'].value = server.server_module || '';
+    form.elements['server-shell'].value = server.shell || 'bash';
+    form.elements['server-conda-env'].value = server.conda_env || '';
+    form.elements['server-active'].checked = server.active;
     form.elements['server-name'].disabled = true;
   } else {
     modalTitle.textContent = 'Add New Server';
     form.reset();
     form.elements['server-name'].disabled = false;
+    form.elements['server-type'].value = 'script';
+    form.elements['server-shell'].value = 'bash';
+    form.elements['server-active'].checked = true;
   }
 
+  updateServerTypeFields();
   modal.style.display = 'block';
 }
 
+function updateServerTypeFields() {
+  const serverType = document.getElementById('server-type').value;
+  document.getElementById('script-group').style.display = serverType === 'script' ? 'block' : 'none';
+  document.getElementById('module-group').style.display = serverType === 'module' ? 'block' : 'none';
+}
+
 async function handleServerFormSubmit(event) {
   event.preventDefault();
   const form = event.target;
@@ -284,39 +301,23 @@ async function handleServerFormSubmit(event) {
   const serverConfig = {
     host: form.elements['server-host'].value,
     username: form.elements['server-username'].value,
-    httpPort: parseInt(form.elements['server-port'].value, 10),
-    server_script: form.elements['server-script'].value,
-    active: true
+    httpPort: parseInt(form.elements['server-http-port'].value, 10),
+    screen_name: form.elements['server-screen-name'].value,
+    shell: form.elements['server-shell'].value,
+    active: form.elements['server-active'].checked
   };
 
-  if (editingServer) {
-    config[editingServer] = { ...config[editingServer], ...serverConfig };
+  const serverType = form.elements['server-type'].value;
+  if (serverType === 'script') {
+    serverConfig.server_script = form.elements['server-script'].value;
   } else {
-    config[serverName] = serverConfig;
+    serverConfig.server_module = form.elements['server-module'].value;
   }
 
-  await saveConfig();
-  closeServerModal();
-  renderServers();
-}
-
-function closeServerModal() {
-  const modal = document.getElementById('server-modal');
-  modal.style.display = 'none';
-  editingServer = null;
-}
-
-async function handleServerFormSubmit(event) {
-  event.preventDefault();
-  const form = event.target;
-  const serverName = form.elements['server-name'].value;
-  const serverConfig = {
-    host: form.elements['server-host'].value,
-    username: form.elements['server-username'].value,
-    httpPort: parseInt(form.elements['server-port'].value, 10),
-    server_script: form.elements['server-script'].value,
-    active: true
-  };
+  const condaEnv = form.elements['server-conda-env'].value;
+  if (condaEnv) {
+    serverConfig.conda_env = condaEnv;
+  }
 
   if (editingServer) {
     await updateServer(editingServer, serverConfig);
@@ -325,6 +326,11 @@ async function handleServerFormSubmit(event) {
   }
 
   closeServerModal();
+}
+function closeServerModal() {
+  const modal = document.getElementById('server-modal');
+  modal.style.display = 'none';
+  editingServer = null;
 }
 
 async function addServer(serverName, serverConfig) {
@@ -489,6 +495,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('inactive-servers-header').addEventListener('click', toggleInactiveServers);
   // document.getElementById('import-config-btn').addEventListener('click', importConfig);
   // document.getElementById('import-ssh-key-btn').addEventListener('click', importSSHKey);
+  document.getElementById('server-type').addEventListener('change', updateServerTypeFields);
   document.getElementById('set-config-path-btn').addEventListener('click', setConfigPath);
   document.getElementById('save-config-btn').addEventListener('click', saveConfig);
   document.getElementById('set-ssh-key-path-btn').addEventListener('click', setSshKeyPath);
