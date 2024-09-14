@@ -312,26 +312,42 @@ async function handleServerFormSubmit(event) {
   const serverName = form.elements['server-name'].value;
   const serverConfig = {
     host: form.elements['server-host'].value,
+    username: form.elements['server-username'].value,
     httpPort: parseInt(form.elements['server-port'].value, 10),
     server_script: form.elements['server-script'].value,
     active: true
   };
 
   if (editingServer) {
-    config[editingServer] = { ...config[editingServer], ...serverConfig };
+    await updateServer(editingServer, serverConfig);
   } else {
-    config[serverName] = serverConfig;
+    await addServer(serverName, serverConfig);
   }
 
-  await saveConfig();
   closeServerModal();
+}
+
+async function addServer(serverName, serverConfig) {
+  await ipcRenderer.invoke('add-server', { serverName, serverConfig });
+  await loadConfig();
   renderServers();
 }
 
-function toggleServerActive(serverName) {
-  config[serverName].active = !config[serverName].active;
-  saveConfig();
-  renderServers(); // Re-render all servers after toggling
+async function updateServer(serverName, serverConfig) {
+  await ipcRenderer.invoke('update-server', { serverName, serverConfig });
+  await loadConfig();
+  renderServers();
+}
+
+async function removeServer(serverName) {
+  await ipcRenderer.invoke('remove-server', serverName);
+  await loadConfig();
+  renderServers();
+}
+async function toggleServerActive(serverName) {
+  await ipcRenderer.invoke('toggle-server-active', serverName);
+  await loadConfig();
+  renderServers();
 }
 
 function renderServers() {
@@ -421,9 +437,48 @@ async function importSSHKey() {
     alert('Failed to import SSH key.');
   }
 }
+async function loadPaths() {
+  const paths = await ipcRenderer.invoke('get-paths');
+  document.getElementById('config-path').textContent = paths.configPath;
+  document.getElementById('ssh-key-path').textContent = paths.sshKeyPath;
+}
+
+async function setConfigPath() {
+  const result = await ipcRenderer.invoke('show-open-dialog', {
+    properties: ['openFile'],
+    filters: [{ name: 'JSON', extensions: ['json'] }]
+  });
+  if (!result.canceled) {
+    const newPath = result.filePaths[0];
+    await ipcRenderer.invoke('set-config-path', newPath);
+    loadPaths();
+    renderServers();  // Reload the server list with the new configuration
+  }
+}
+
+async function saveConfig() {
+  const result = await ipcRenderer.invoke('save-config');
+  if (result.success) {
+    alert('Configuration saved successfully');
+  } else {
+    alert('Failed to save configuration: ' + result.error);
+  }
+}
+
+async function setSshKeyPath() {
+  const result = await ipcRenderer.invoke('show-open-dialog', {
+    properties: ['openFile']
+  });
+  if (!result.canceled) {
+    const newPath = result.filePaths[0];
+    await ipcRenderer.invoke('set-ssh-key-path', newPath);
+    loadPaths();
+  }
+}
 
 // Wait for the DOM to be fully loaded before creating UI elements
 document.addEventListener('DOMContentLoaded', async () => {
+  await loadPaths();  // Load paths first
   await loadConfig();
   renderServers();
 
@@ -432,8 +487,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.querySelector('.modal .close').addEventListener('click', closeServerModal);
   document.getElementById('server-form').addEventListener('submit', handleServerFormSubmit);
   document.getElementById('inactive-servers-header').addEventListener('click', toggleInactiveServers);
-  document.getElementById('import-config-btn').addEventListener('click', importConfig);
-  document.getElementById('import-ssh-key-btn').addEventListener('click', importSSHKey);
+  // document.getElementById('import-config-btn').addEventListener('click', importConfig);
+  // document.getElementById('import-ssh-key-btn').addEventListener('click', importSSHKey);
+  document.getElementById('set-config-path-btn').addEventListener('click', setConfigPath);
+  document.getElementById('save-config-btn').addEventListener('click', saveConfig);
+  document.getElementById('set-ssh-key-path-btn').addEventListener('click', setSshKeyPath);
+
   document.querySelector('.close-log').addEventListener('click', closeLogModal);
 
   document.querySelector('.close-terminal').addEventListener('click', closeTerminalModal);

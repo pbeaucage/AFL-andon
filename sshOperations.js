@@ -23,7 +23,7 @@ class SSHOperations {
         const server = this.config[serverName];
         if (!server.httpPort) server.httpPort = 5000;
         if (!server.shell) server.shell = 'bash';
-        if (!server.active) server.active = true;
+        if (!('active' in server)) server.active = true;
         if (!server.username) {
           console.warn(`Username not specified for server ${serverName}. Using current user.`);
           server.username = require('os').userInfo().username;
@@ -33,12 +33,45 @@ class SSHOperations {
       console.error('Error loading config:', error);
     }
   }
+  async saveConfig() {
+    try {
+      await fs.writeFile(this.configPath, JSON.stringify(this.config, null, 2));
+    } catch (error) {
+      console.error('Error saving config:', error);
+      throw error;
+    }
+  }
 
   async loadSSHKey() {
     try {
       this.sshKey = await fs.readFile(this.sshKeyPath);
     } catch (error) {
       console.error('Error loading SSH key:', error);
+    }
+  }
+
+  setConfigPath(newPath) {
+    this.configPath = newPath;
+  }
+
+  setSshKeyPath(newPath) {
+    this.sshKeyPath = newPath;
+  }
+  addServer(serverName, serverConfig) {
+    this.config[serverName] = serverConfig;
+  }
+
+  removeServer(serverName) {
+    delete this.config[serverName];
+  }
+
+  updateServer(serverName, serverConfig) {
+    this.config[serverName] = { ...this.config[serverName], ...serverConfig };
+  }
+
+  toggleServerActive(serverName) {
+    if (this.config[serverName]) {
+      this.config[serverName].active = !this.config[serverName].active;
     }
   }
 

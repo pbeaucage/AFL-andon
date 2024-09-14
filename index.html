@@ -402,9 +402,8 @@
     <div class="header-container">
         <h1>AFL Server Control</h1>
         <div class="header-buttons">
-            <button id="import-config-btn" class="header-button">Import Config</button>
-            <button id="import-ssh-key-btn" class="header-button">Import SSH Key</button>
-            <button id="add-server-btn" class="header-button">Add New Server</button>
+            <button id="save-config-btn">Save Configuration</button>
+            <button id="add-server-btn">Add New Server</button>
         </div>
     </div>
     <div id="app">
@@ -416,6 +415,12 @@
             <div id="inactive-servers-content"></div>
         </div>
 
+    </div>
+    <div>
+        <p>Config Path: <span id="config-path" class="path-display"></span></p>
+	<button id="set-config-path-btn">Set Config Path</button>
+        <p>SSH Key Path: <span id="ssh-key-path" class="path-display"></span></p>
+	<button id="set-ssh-key-path-btn">Set SSH Key Path</button>
     </div>
     <div id="log-modal" class="modal">
         <div class="log-modal-content">

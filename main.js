@@ -9,8 +9,29 @@ const SSHOperations = require('./sshOperations');
 
 let mainWindow;
 let sshOps;
-const configPath = path.join(app.getPath('userData'), 'config.json');
-const sshKeyPath = path.join(app.getPath('userData'), 'id_rsa');
+
+// Set default paths
+let configPath = path.join(app.getPath('home'), '.afl', 'launchers.json');
+let sshKeyPath = path.join(app.getPath('home'), '.ssh', 'id_rsa');
+
+// Override with environment variables if set
+if (process.env.SERVER_CONTROL_CONFIG_PATH) {
+  configPath = process.env.SERVER_CONTROL_CONFIG_PATH;
+}
+if (process.env.SERVER_CONTROL_SSH_KEY_PATH) {
+  sshKeyPath = process.env.SERVER_CONTROL_SSH_KEY_PATH;
+}
+
+// Override with command-line arguments if provided
+const argConfigPath = process.argv.find(arg => arg.startsWith('--config='));
+const argSshKeyPath = process.argv.find(arg => arg.startsWith('--ssh-key='));
+
+if (argConfigPath) {
+  configPath = argConfigPath.split('=')[1];
+}
+if (argSshKeyPath) {
+  sshKeyPath = argSshKeyPath.split('=')[1];
+}
 
 async function createWindow() {
   mainWindow = new BrowserWindow({
@@ -116,17 +137,40 @@ ipcMain.handle('get-config', async () => {
   await sshOps.loadConfig();  // Reload config before sending
   return sshOps.config;
 });
+ipcMain.handle('add-server', async (event, { serverName, serverConfig }) => {
+  sshOps.addServer(serverName, serverConfig);
+  await sshOps.saveConfig();
+  return { success: true };
+});
 
-ipcMain.handle('save-config', async (event, newConfig) => {
+ipcMain.handle('update-server', async (event, { serverName, serverConfig }) => {
+  sshOps.updateServer(serverName, serverConfig);
+  await sshOps.saveConfig();
+  return { success: true };
+});
+
+ipcMain.handle('remove-server', async (event, serverName) => {
+  sshOps.removeServer(serverName);
+  await sshOps.saveConfig();
+  return { success: true };
+});
+
+ipcMain.handle('toggle-server-active', async (event, serverName) => {
+  sshOps.toggleServerActive(serverName);
+  await sshOps.saveConfig();
+  return { success: true };
+});
+
+ipcMain.handle('save-config', async () => {
   try {
-    await fs.writeFile(configPath, JSON.stringify(newConfig, null, 2));
-    await sshOps.loadConfig();  // Reload config after saving
+    await sshOps.saveConfig();
     return { success: true };
   } catch (error) {
     console.error('Error saving config:', error);
     return { success: false, error: error.message };
   }
 });
+
 
 let sshConnections = {};
 
@@ -195,5 +239,28 @@ ipcMain.on('resize-pty', (event, { serverName, cols, rows }) => {
   if (connection && connection.stream) {
     connection.stream.setWindow(rows, cols);
   }
+});
+
+ipcMain.handle('set-config-path', async (event, newPath) => {
+  configPath = newPath;
+  sshOps.setConfigPath(newPath);
+  await sshOps.loadConfig();
+  return { success: true };
+});
+
+
+ipcMain.handle('set-ssh-key-path', async (event, newPath) => {
+  sshKeyPath = newPath;
+  sshOps.setSshKeyPath(newPath);
+  return { success: true };
+});
+
+ipcMain.handle('get-paths', () => {
+  return { configPath, sshKeyPath };
+});
+
+ipcMain.handle('show-open-dialog', async (event, options) => {
+  const result = await dialog.showOpenDialog(mainWindow, options);
+  return result;
 });
 
