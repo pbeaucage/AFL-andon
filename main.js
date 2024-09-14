@@ -16,6 +16,7 @@ async function createWindow() {
   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
+    icon: path.join(__dirname, 'assets', 'icons', 'png', '256x256.png'), // Use PNG for all platforms in dev
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false

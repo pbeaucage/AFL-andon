@@ -30,24 +30,28 @@
   },
   "devDependencies": {
     "electron": "^24.3.0",
-    "electron-builder": "^23.6.0"
+    "electron-builder": "^23.6.0",
+    "electron-icon-maker": "^0.0.5"
   },
   "build": {
     "appId": "gov.nist.AFL-andon",
     "productName": "AFL Andon",
     "mac": {
-      "category": "public.app-category.utilities"
-    },
+      "category": "public.app-category.utilities",
+      "icon": "assets/icons/mac/icon.icns"
+    	},
     "win": {
       "target": [
         "nsis"
-      ]
+      ],
+      "icon": "assets/icons/win/icon.ico"
     },
     "linux": {
       "target": [
         "AppImage",
         "deb"
       ],
+      "icon": "assets/icons/png/512x512.png",
       "category": "Utility"
     }
   }
