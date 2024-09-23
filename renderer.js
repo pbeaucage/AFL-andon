@@ -12,37 +12,24 @@ let sshStream;
 let terminal;
 let currentServerName;
 
-function initializeTerminal() {
-  terminal = new Terminal();
-  const fitAddon = new FitAddon();
-  terminal.loadAddon(fitAddon);
-
-  const terminalContainer = document.getElementById('terminal-container');
-  terminal.open(terminalContainer);
-  fitAddon.fit();
-
-  terminal.onData(data => {
-    if (currentServerName) {
-      ipcRenderer.send('ssh-data', { serverName: currentServerName, data });
-    }
-  });
-
-  ipcRenderer.on('ssh-data', (event, { serverName, data }) => {
-    if (serverName === currentServerName) {
-      terminal.write(data);
-    }
-  });
-
-  ipcRenderer.on('ssh-closed', (event, serverName) => {
-    if (serverName === currentServerName) {
-      terminal.writeln('\r\nConnection closed');
-      currentServerName = null;
-    }
-  });
-}
+let terminal;
+let currentServerName;
 
 async function joinServer(serverName) {
   try {
+    // Close existing connection if any
+    if (currentServerName) {
+      await ipcRenderer.invoke('close-ssh-session', currentServerName);
+      currentServerName = null;
+    }
+
+    // Reinitialize terminal
+    if (terminal) {
+      terminal.dispose();
+      terminal = null;
+    }
+    initializeTerminal();
+
     const result = await ipcRenderer.invoke('start-ssh-session', serverName);
     if (result.success) {
       showTerminalModal();
@@ -58,6 +45,41 @@ async function joinServer(serverName) {
     alert(`Error joining server ${serverName}: ${error.message}`);
   }
 }
+
+function initializeTerminal() {
+  if (terminal) {
+    console.warn('Terminal already initialized, disposing old instance');
+    terminal.dispose();
+  }
+
+  terminal = new Terminal({
+    disableStdin: false
+  });
+  const fitAddon = new FitAddon();
+  terminal.loadAddon(fitAddon);
+
+  const terminalContainer = document.getElementById('terminal-container');
+  terminal.open(terminalContainer);
+  fitAddon.fit();
+
+  terminal.onData(data => {
+    console.log('Terminal input:', data);
+    if (currentServerName) {
+      ipcRenderer.send('ssh-data', { serverName: currentServerName, data });
+    }
+  });
+
+  // Remove any existing ssh-data listeners
+  ipcRenderer.removeAllListeners('ssh-data');
+
+  ipcRenderer.on('ssh-data', (event, { serverName, data }) => {
+    console.log('SSH data received:', data);
+    if (serverName === currentServerName) {
+      terminal.write(data);
+    }
+  });
+}
+
 
 function showTerminalModal() {
   const modal = document.getElementById('terminal-modal');

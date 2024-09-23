@@ -170,12 +170,14 @@ ipcMain.handle('save-config', async () => {
     return { success: false, error: error.message };
   }
 });
-
-
-let sshConnections = {};
-
+const sshConnections = {};
 
 ipcMain.handle('start-ssh-session', async (event, serverName) => {
+  // Close existing connection if any
+  if (sshConnections[serverName]) {
+    await closeSSHConnection(serverName);
+  }
+
   const serverConfig = sshOps.config[serverName];
   const conn = new Client();
 
@@ -187,7 +189,10 @@ ipcMain.handle('start-ssh-session', async (event, serverName) => {
         host: serverConfig.host,
         port: 22,
         username: serverConfig.username,
-        privateKey: require('fs').readFileSync(sshKeyPath)
+        privateKey: fs.readFileSync(sshKeyPath),
+        pty: {
+          term: 'xterm'
+        }
       });
     });
 
@@ -205,8 +210,7 @@ ipcMain.handle('start-ssh-session', async (event, serverName) => {
     });
 
     stream.on('close', () => {
-      delete sshConnections[serverName];
-      mainWindow.webContents.send('ssh-closed', serverName);
+      closeSSHConnection(serverName);
     });
 
     // Send the 'screen -x' command
@@ -219,18 +223,29 @@ ipcMain.handle('start-ssh-session', async (event, serverName) => {
   }
 });
 
+ipcMain.handle('close-ssh-session', async (event, serverName) => {
+  await closeSSHConnection(serverName);
+  return { success: true };
+});
+
+async function closeSSHConnection(serverName) {
+  const connection = sshConnections[serverName];
+  if (connection) {
+    if (connection.stream) {
+      connection.stream.end();
+    }
+    if (connection.conn) {
+      connection.conn.end();
+    }
+    delete sshConnections[serverName];
+    console.log(`Closed SSH connection for ${serverName}`);
+  }
+}
+
 ipcMain.on('ssh-data', (event, { serverName, data }) => {
   const connection = sshConnections[serverName];
   if (connection && connection.stream) {
     connection.stream.write(data);
-  }
-});
-
-ipcMain.on('close-ssh-session', (event, serverName) => {
-  const connection = sshConnections[serverName];
-  if (connection) {
-    connection.conn.end();
-    delete sshConnections[serverName];
   }
 });
 
