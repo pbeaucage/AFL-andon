@@ -189,7 +189,7 @@ ipcMain.handle('start-ssh-session', async (event, serverName) => {
         host: serverConfig.host,
         port: 22,
         username: serverConfig.username,
-        privateKey: fs.readFileSync(sshKeyPath),
+        privateKey: require('fs').readFileSync(sshKeyPath),
         pty: {
           term: 'xterm'
         }

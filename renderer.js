@@ -12,9 +12,6 @@ let sshStream;
 let terminal;
 let currentServerName;
 
-let terminal;
-let currentServerName;
-
 async function joinServer(serverName) {
   try {
     // Close existing connection if any
@@ -63,7 +60,6 @@ function initializeTerminal() {
   fitAddon.fit();
 
   terminal.onData(data => {
-    console.log('Terminal input:', data);
     if (currentServerName) {
       ipcRenderer.send('ssh-data', { serverName: currentServerName, data });
     }
@@ -73,7 +69,6 @@ function initializeTerminal() {
   ipcRenderer.removeAllListeners('ssh-data');
 
   ipcRenderer.on('ssh-data', (event, { serverName, data }) => {
-    console.log('SSH data received:', data);
     if (serverName === currentServerName) {
       terminal.write(data);
     }
