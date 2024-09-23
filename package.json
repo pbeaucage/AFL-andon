@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "electron": "^24.3.0",
-    "electron-builder": "^23.6.0",
+    "electron-builder": "^25.0.5",
     "electron-icon-maker": "^0.0.5"
   },
   "build": {
@@ -39,7 +39,7 @@
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "assets/icons/mac/icon.icns"
-    	},
+    },
     "win": {
       "target": [
         "nsis"
