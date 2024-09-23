@@ -15,7 +15,9 @@
     "type": "git",
     "url": "git+https://github.com/pbeaucage/AFL-andon.git"
   },
-  "author": "Peter Beaucage",
+  "author": {"name": "Peter Beaucage",
+	     "email": "peter.beaucage@nist.gov"
+		},
   "license": "NIST-PD-fallback",
   "bugs": {
     "url": "https://github.com/pbeaucage/AFL-andon/issues"
