@@ -102,7 +102,9 @@ async function saveConfig() {
 }
 async function checkHttpEndpoint(serverName) {
   const serverConfig = config[serverName];
-  const url = `http://${serverConfig.host}:${serverConfig.httpPort}/get_server_time`;
+  const endpoint = serverConfig.statusEndpoint || '/get_server_time';
+  const sanitizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const url = `http://${serverConfig.host}:${serverConfig.httpPort}${sanitizedEndpoint}`;
   try {
     const response = await fetch(url, { timeout: 5000 });
     return response.ok;
@@ -272,7 +274,8 @@ function createServerControls(serverName) {
 
   const infoElement = document.createElement('div');
   infoElement.className = 'server-info';
-  infoElement.textContent = `SSH: ${serverConfig.username}@${serverConfig.host}, HTTP: ${serverConfig.host}:${serverConfig.httpPort}`;
+  const endpointInfo = serverConfig.statusEndpoint || '/get_server_time';
+  infoElement.textContent = `SSH: ${serverConfig.username}@${serverConfig.host}, HTTP: ${serverConfig.host}:${serverConfig.httpPort}${endpointInfo}`;
   container.appendChild(infoElement);
 
   const statusContainer = document.createElement('div');
@@ -333,6 +336,7 @@ function openServerModal(serverName = null) {
     form.elements['server-host'].value = server.host;
     form.elements['server-username'].value = server.username;
     form.elements['server-http-port'].value = server.httpPort;
+    form.elements['server-status-endpoint'].value = server.statusEndpoint || '/get_server_time';
     form.elements['server-screen-name'].value = server.screen_name;
     form.elements['server-type'].value = server.server_script ? 'script' : 'module';
     form.elements['server-script'].value = server.server_script || '';
@@ -348,6 +352,7 @@ function openServerModal(serverName = null) {
     form.elements['server-type'].value = 'script';
     form.elements['server-shell'].value = 'bash';
     form.elements['server-active'].checked = true;
+    form.elements['server-status-endpoint'].value = '/get_server_time';
   }
 
   updateServerTypeFields();
@@ -368,6 +373,7 @@ async function handleServerFormSubmit(event) {
     host: form.elements['server-host'].value,
     username: form.elements['server-username'].value,
     httpPort: parseInt(form.elements['server-http-port'].value, 10),
+    statusEndpoint: form.elements['server-status-endpoint'].value || '/get_server_time',
     screen_name: form.elements['server-screen-name'].value,
     shell: form.elements['server-shell'].value,
     active: form.elements['server-active'].checked

@@ -44,3 +44,9 @@ npm run build
 ```
 
 See `package.json` for platform-specific build scripts.
+
+## Configuration
+
+Server definitions live in a JSON config file. Each server can specify a
+`statusEndpoint` used to check its HTTP status. If omitted, the application
+defaults to `/get_server_time`.

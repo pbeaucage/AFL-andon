@@ -24,6 +24,7 @@ class SSHOperations {
         const server = this.config[serverName];
         if (!server.httpPort) server.httpPort = 5000;
         if (!server.shell) server.shell = 'bash';
+        if (!server.statusEndpoint) server.statusEndpoint = '/get_server_time';
         if (!('active' in server)) server.active = true;
         if (!server.username) {
           console.warn(`Username not specified for server ${serverName}. Using current user.`);
