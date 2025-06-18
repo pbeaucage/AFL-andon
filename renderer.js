@@ -2,7 +2,8 @@
 const { ipcRenderer } = require('electron');
 const { Terminal } = require('@xterm/xterm');
 const { FitAddon } = require('@xterm/addon-fit');
-const fetch = require('node-fetch');
+const http = require('http');
+const https = require('https');
 
 let config;
 let editingServer = null;
@@ -104,14 +105,28 @@ async function checkHttpEndpoint(serverName) {
   const serverConfig = config[serverName];
   const endpoint = serverConfig.statusEndpoint || '/get_server_time';
   const sanitizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
-  const url = `http://${serverConfig.host}:${serverConfig.httpPort}${sanitizedEndpoint}`;
-  try {
-    const response = await fetch(url, { timeout: 5000 });
-    return response.ok;
-  } catch (error) {
-    console.error(`HTTP check failed for ${serverName}:`, error);
-    return false;
-  }
+  const urlString = `http://${serverConfig.host}:${serverConfig.httpPort}${sanitizedEndpoint}`;
+  return new Promise((resolve) => {
+    try {
+      const url = new URL(urlString);
+      const lib = url.protocol === 'https:' ? https : http;
+      const req = lib.get(url, (res) => {
+        res.resume(); // consume data
+        resolve(res.statusCode >= 200 && res.statusCode < 300);
+      });
+      req.on('error', (error) => {
+        console.error(`HTTP check failed for ${serverName}:`, error);
+        resolve(false);
+      });
+      req.setTimeout(5000, () => {
+        req.destroy();
+        resolve(false);
+      });
+    } catch (error) {
+      console.error(`HTTP check setup failed for ${serverName}:`, error);
+      resolve(false);
+    }
+  });
 }
 
 async function updateServerStatus(serverName) {

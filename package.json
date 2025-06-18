@@ -30,7 +30,6 @@
   },
   "dependencies": {
     "fs-extra": "^11.3.0",
-    "node-fetch": "^3.3.2",
     "ssh2": "^1.16.0",
     "@xterm/xterm": "^5.5.0",
     "@xterm/addon-fit": "^0.10.0"
