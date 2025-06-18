@@ -134,7 +134,7 @@ ipcMain.handle('import-ssh-key', async () => {
     const sourcePath = result.filePaths[0];
     await fs.copyFile(sourcePath, sshKeyPath);
     await fs.chmod(sshKeyPath, 0o600); // Ensure correct permissions
-    sshOps.loadSSHKey(sshKeyPath);
+    await sshOps.loadSSHKey();
     return { success: true, message: 'SSH key imported successfully.' };
   } catch (error) {
     console.error('Error importing SSH key:', error);
