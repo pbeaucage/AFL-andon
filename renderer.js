@@ -119,15 +119,18 @@ async function fetchQueueState(serverName) {
       return { ok: false, state: null };
     }
     let state;
-      try {
-        state = (await response.text()).trim();
-      } catch (_) {
-        state = null;
-      }
-      return { ok: true, state };
+    try {
+      state = (await response.text()).trim();
+    } catch (_) {
+      state = null;
+    }
+    return { ok: true, state };
+  } catch (err) {
+    // Treat network errors (e.g., connection refused) as unreachable
+    return { ok: false, state: null };
   } finally {
     clearTimeout(timer);
-}
+  }
 }
 
 async function updateServerStatus(serverName) {
