@@ -44,3 +44,9 @@ npm run build
 ```
 
 See `package.json` for platform-specific build scripts.
+
+## Windows Support
+
+Servers running Windows can now be managed through [WinRM](https://learn.microsoft.com/en-us/windows/win32/winrm/windows-remote-management).  
+Add `"protocol": "winrm"` and a `"password"` field to the server configuration.  
+The application will execute commands via PowerShell remoting instead of SSH.
