@@ -12,6 +12,15 @@ const debugLog = (...args) => {
   }
 };
 
+const DEBUG_WINRM = ['1', 'true', 'yes'].includes(
+  (process.env.DEBUG_WINRM || '').toLowerCase()
+);
+const debugWinrm = (...args) => {
+  if (DEBUG_WINRM) {
+    console.log('[WINRM DEBUG]', ...args);
+  }
+};
+
 class SSHOperations {
   constructor(configPath, sshKeyPath) {
     this.config = {};
@@ -98,15 +107,20 @@ class SSHOperations {
 
       if (serverConfig.protocol === 'winrm') {
         const port = serverConfig.port || 5985;
+        debugWinrm(`Executing on ${serverConfig.host}:${port}`);
+        debugWinrm(`User: ${serverConfig.username}`);
+        debugWinrm(`Command: ${command}`);
         winrm
           .runCommand(command, serverConfig.host, serverConfig.username,
             serverConfig.password, port)
           .then((output) => {
+            debugWinrm(`Output: ${output}`);
             resolve({ success: true, output });
           })
           .catch((err) => {
-            console.error(`WinRM error for ${serverName}:`, err.message);
-            resolve({ success: false, sshDown: true });
+            console.error(`WinRM error for ${serverName}:`, err);
+            debugWinrm('WinRM error object:', err);
+            resolve({ success: false, sshDown: true, error: err.message });
           });
         return;
       }
@@ -195,8 +209,10 @@ class SSHOperations {
           command = `conda activate ${serverConfig.conda_env}; ${command}`;
         }
         startCommand = `Start-Process powershell -ArgumentList '${command}' -WindowStyle Hidden`;
+        debugWinrm(`Start command for ${serverName}: ${startCommand}`);
       } else if (serverConfig.server_script) {
         startCommand = `Start-Process powershell -ArgumentList '${serverConfig.server_script}' -WindowStyle Hidden`;
+        debugWinrm(`Start command for ${serverName}: ${startCommand}`);
       } else {
         return { success: false, error: 'Neither server_module nor server_script specified in config' };
       }
@@ -222,6 +238,7 @@ class SSHOperations {
     let stopCommand;
     if (serverConfig.protocol === 'winrm') {
       stopCommand = `taskkill /IM ${serverConfig.screen_name}.exe /F`;
+      debugWinrm(`Stop command for ${serverName}: ${stopCommand}`);
     } else {
       stopCommand = `screen -X -S ${serverConfig.screen_name} quit`;
     }
@@ -261,8 +278,9 @@ class SSHOperations {
     if (!result.success) {
       return { success: false, sshDown: true };
     }
-    
+
     if (serverConfig.protocol === 'winrm') {
+      debugWinrm(`Status output for ${serverName}: ${result.output}`);
       return {
         success: true,
         status: result.output && result.output.trim().length > 0
@@ -323,6 +341,7 @@ class SSHOperations {
     }
     
     if (serverConfig.protocol === 'winrm') {
+      debugWinrm(`Batch status output from ${host}: ${result.output}`);
       return { success: true, host, sessions: result.output ? [serverConfig.screen_name] : [] };
     }
 
@@ -399,6 +418,7 @@ class SSHOperations {
     console.log(`Reading remote file ${remotePath} from ${host}`);
     if (server.protocol === 'winrm') {
       const cmd = `Get-Content -Path ${remotePath}`;
+      debugWinrm(`Read command on ${host}: ${cmd}`);
       const res = await this.executeCommand(server.name || host, cmd);
       if (res.success) return { success: true, data: res.output };
       return res;
@@ -443,6 +463,7 @@ class SSHOperations {
     if (server.protocol === 'winrm') {
       const encoded = Buffer.from(content).toString('base64');
       const ps = `Set-Content -Path ${remotePath} -Value ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('${encoded}'))) -Force`;
+      debugWinrm(`Write command on ${host}: ${ps}`);
       const res = await this.executeCommand(server.name || host, ps);
       return res.success ? { success: true } : res;
     }

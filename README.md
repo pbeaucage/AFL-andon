@@ -52,3 +52,8 @@ Add `"protocol": "winrm"` and a `"password"` field to the server configuration.
 
 When adding a server in the UI, select **Windows (WinRM)** to specify a Windows host.
 The application will execute commands via PowerShell remoting instead of SSH.
+
+### Debugging WinRM
+
+Set the environment variable `DEBUG_WINRM=1` before launching the app to see
+additional WinRM logs, including the commands sent and any returned errors.
