@@ -51,7 +51,7 @@ Servers running Windows can now be managed through [WinRM](https://learn.microso
 Add `"protocol": "winrm"` and a `"password"` field to the server configuration.
 
 When adding a server in the UI, select **Windows (WinRM)** to specify a Windows host.
-The application will execute commands via PowerShell remoting instead of SSH.
+The application will execute commands via PowerShell remoting instead of SSH, using NTLM authentication by default.
 
 ### Debugging WinRM
 

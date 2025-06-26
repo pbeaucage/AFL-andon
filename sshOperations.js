@@ -1,5 +1,5 @@
 const { Client } = require('ssh2');
-const winrm = require('nodejs-winrm');
+const winrm = require('./winrmNtlm');
 const fs = require('fs').promises;
 const path = require('path');
 
