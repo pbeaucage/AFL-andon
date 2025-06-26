@@ -599,6 +599,17 @@
                     <input type="text" id="server-module">
                 </div>
                 <div class="form-group">
+                    <label for="server-protocol">Host Type:</label>
+                    <select id="server-protocol">
+                        <option value="ssh">Unix/Linux (SSH)</option>
+                        <option value="winrm">Windows (WinRM)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="password-group" style="display: none;">
+                    <label for="server-password">Password:</label>
+                    <input type="password" id="server-password">
+                </div>
+                <div class="form-group">
                     <label for="server-shell">Shell:</label>
                     <input type="text" id="server-shell" value="bash">
                 </div>

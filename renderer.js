@@ -594,6 +594,8 @@ function openServerModal(serverName = null) {
     form.elements['server-module'].value = server.server_module || '';
     form.elements['server-shell'].value = server.shell || 'bash';
     form.elements['server-conda-env'].value = server.conda_env || '';
+    form.elements['server-protocol'].value = server.protocol || 'ssh';
+    form.elements['server-password'].value = server.password || '';
     form.elements['server-active'].checked = server.active;
     form.elements['server-name'].disabled = true;
   } else {
@@ -602,10 +604,13 @@ function openServerModal(serverName = null) {
     form.elements['server-name'].disabled = false;
     form.elements['server-type'].value = 'script';
     form.elements['server-shell'].value = 'bash';
+    form.elements['server-protocol'].value = 'ssh';
+    form.elements['server-password'].value = '';
     form.elements['server-active'].checked = true;
   }
 
   updateServerTypeFields();
+  updateProtocolFields();
   modal.style.display = 'block';
 }
 
@@ -613,6 +618,17 @@ function updateServerTypeFields() {
   const serverType = document.getElementById('server-type').value;
   document.getElementById('script-group').style.display = serverType === 'script' ? 'block' : 'none';
   document.getElementById('module-group').style.display = serverType === 'module' ? 'block' : 'none';
+}
+
+function updateProtocolFields() {
+  const protocol = document.getElementById('server-protocol').value;
+  document.getElementById('password-group').style.display = protocol === 'winrm' ? 'block' : 'none';
+  if (protocol === 'winrm') {
+    const shellInput = document.getElementById('server-shell');
+    if (!shellInput.value || shellInput.value === 'bash') {
+      shellInput.value = 'powershell';
+    }
+  }
 }
 
 async function handleServerFormSubmit(event) {
@@ -624,6 +640,8 @@ async function handleServerFormSubmit(event) {
     username: form.elements['server-username'].value,
     httpPort: parseInt(form.elements['server-http-port'].value, 10),
     screen_name: form.elements['server-screen-name'].value,
+    protocol: form.elements['server-protocol'].value,
+    password: form.elements['server-password'].value,
     shell: form.elements['server-shell'].value,
     active: form.elements['server-active'].checked
   };
@@ -823,6 +841,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // document.getElementById('import-config-btn').addEventListener('click', importConfig);
   // document.getElementById('import-ssh-key-btn').addEventListener('click', importSSHKey);
   document.getElementById('server-type').addEventListener('change', updateServerTypeFields);
+  document.getElementById('server-protocol').addEventListener('change', updateProtocolFields);
   document.getElementById('set-config-path-btn').addEventListener('click', setConfigPath);
   document.getElementById('save-config-btn').addEventListener('click', saveConfig);
   document.getElementById('set-ssh-key-path-btn').addEventListener('click', setSshKeyPath);
